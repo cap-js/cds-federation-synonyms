@@ -1,59 +1,32 @@
 {
-  "name": "@cap-js/REPO-NAME",
-  "version": "1.0.0",
-  "description": "CAP cds-plugin REPO-DESCRIPTION",
+  "name": "@cap-js/cds-federation-synonyms",
+  "version": "0.0.1",
+  "description": "CDS plugin for data federation via synonyms",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cap-js/cds-federation-synonyms.git"
+  },
   "license": "Apache-2.0",
-  "author": "AUTHOR",
+  "author": "SAP SE (https://www.sap.com)",
   "homepage": "https://cap.cloud.sap/",
   "main": "cds-plugin.js",
   "scripts": {
     "lint": "npx eslint .",
-    "test": "npx jest --silent",
-    "test:hybrid": "cds bind --exec -- npx jest",
-    "prettier": "npx -y prettier@3 --write .",
-    "prettier:check": "npx -y prettier@3 --check .",
-    "watch:sample": "cd tests/bookshop && cds watch"
+    "test": "npx jest --silent"
   },
   "files": [
-    "index.cds",
+    "doc",
     "lib",
-    "db",
-    "srv"
+    "cds-plugin.js"
+  ],
+  "workspaces": [
+    "test"
   ],
   "devDependencies": {
-    "@cap-js/cds-test": ">=0",
-    "@cap-js/sqlite": "^2"
+    "@cap-js/cds-federation-synonyms": "file:.",
+    "@cap-js/cds-test": "^1.0.1"
   },
   "peerDependencies": {
-    "@sap/cds": ">=8"
-  },
-  "engines": {
-    "node": ">=20.0.0"
-  },
-  "workspaces": [
-    "tests/bookshop/"
-  ],
-  "cds": {
-    "requires": {
-      "emojis": {
-        "[development]": {
-          "kind": "emojis-local"
-        },
-        "[hybrid]": {
-          "kind": "emojis-prod"
-        },
-        "[production]": {
-          "kind": "emojis-prod"
-        }
-      },
-      "kinds": {
-        "emojis-local": {
-          "impl": "@cap-js/REPO-NAME/srv/basic"
-        },
-        "emojis-prod": {
-          "impl": "@cap-js/REPO-NAME/srv/prod"
-        }
-      }
-    }
+    "@sap/cds": ">=9.6.1"
   }
 }
