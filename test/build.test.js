@@ -31,6 +31,7 @@ describe('when building', () => {
 
     // This is required for compatibility with 'cds test' runner
     // > The mocha (?) test runner will add ANSI codes to the output
+    // eslint-disable-next-line no-control-regex -- Match ANSI escape codes emitted by test runners
     output = output.replaceAll(/\x1b\[[0-9;]*[a-zA-Z]/g, '')
 
     return output.split('\n').filter(line => line.trim())
