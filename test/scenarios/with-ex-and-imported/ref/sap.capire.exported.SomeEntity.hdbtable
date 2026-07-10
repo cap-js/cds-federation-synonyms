@@ -1,0 +1,5 @@
+COLUMN TABLE sap_capire_exported_SomeEntity (
+  ID INTEGER NOT NULL,
+  name NVARCHAR(5000),
+  PRIMARY KEY(ID)
+)

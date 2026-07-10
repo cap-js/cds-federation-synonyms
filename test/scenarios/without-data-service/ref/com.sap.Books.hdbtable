@@ -1,0 +1,5 @@
+COLUMN TABLE com_sap_Books (
+  ID INTEGER NOT NULL,
+  title NVARCHAR(5000),
+  PRIMARY KEY(ID)
+)

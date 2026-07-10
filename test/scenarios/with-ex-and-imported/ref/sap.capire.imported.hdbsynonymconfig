@@ -1,0 +1,8 @@
+{
+  "SAP_CAPIRE_IMPORTED_FLIGHTS": {
+    "target": {
+      "schema.configure": "sap.capire.imported/schema",
+      "object": "SAP_CAPIRE_IMPORTED_FLIGHTS"
+    }
+  }
+}

@@ -24,9 +24,30 @@
   ],
   "devDependencies": {
     "@cap-js/cds-federation-synonyms": "file:.",
-    "@cap-js/cds-test": "^1.0.1"
+    "@cap-js/cds-test": "^1.0.1",
+    "@sap/cds-dk": ">=9.9.0"
   },
   "peerDependencies": {
     "@sap/cds": ">=9.6.1"
+  },
+  "cds": {
+    "requires": {
+      "[mtx-sidecar]": {
+        "mtx-model": true
+      },
+      "[with-mtx-sidecar]": {
+        "app-model": true
+      },
+      "kinds": {
+        "mtx-model": {
+          "model": "@cap-js/cds-federation-synonyms/lib/mtx-service.cds",
+          "impl": "@cap-js/cds-federation-synonyms/lib/mtx-service.js"
+        },
+        "app-model": {
+          "model": "@cap-js/cds-federation-synonyms/lib/app-service.cds",
+          "impl": "@cap-js/cds-federation-synonyms/lib/app-service.js"
+        }
+      }
+    }
   }
 }

@@ -1,0 +1,22 @@
+{
+  "sap.capire.imported": {
+    "object_owner": {
+      "schema_roles": [
+        {
+          "roles": [
+            "sap.capire.imported#"
+          ]
+        }
+      ]
+    },
+    "application_user": {
+      "schema_roles": [
+        {
+          "roles": [
+            "sap.capire.imported"
+          ]
+        }
+      ]
+    }
+  }
+}

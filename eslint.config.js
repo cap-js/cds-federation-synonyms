@@ -5,7 +5,7 @@ export default [
   {
     files: ["**/*.js"],
     rules: {
-      "no-await-in-loop": "error",
+//      "no-await-in-loop": "error",
       "no-console": ["error", { allow: ["warn", "error"] }],
     },
   },

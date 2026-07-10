@@ -1,0 +1,27 @@
+{
+  "format_version": 1,
+  "imports": [
+    {
+      "target_table": "SAP_CAPIRE_FLIGHTS_FLIGHTS#MOCK",
+      "source_data": {
+        "data_type": "CSV",
+        "file_name": "sap.capire.flights-Flights.csv",
+        "has_header": true,
+        "type_config": {
+          "delimiter": ","
+        }
+      },
+      "import_settings": {
+        "import_columns": [
+          "ID",
+          "CARRIER"
+        ],
+        "include_filter": []
+      },
+      "column_mappings": {
+        "ID": "ID",
+        "CARRIER": "carrier"
+      }
+    }
+  ]
+}
