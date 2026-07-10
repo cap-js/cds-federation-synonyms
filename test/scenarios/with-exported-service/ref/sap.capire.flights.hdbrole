@@ -1,0 +1,14 @@
+{
+  "role": {
+    "name": "sap.capire.flights",
+    "object_privileges": [
+      {
+        "name": "SAP_CAPIRE_FLIGHTS_FLIGHTS",
+        "type": "TABLE",
+        "privileges": [
+          "SELECT"
+        ]
+      }
+    ]
+  }
+}
