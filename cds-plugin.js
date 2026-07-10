@@ -1,4 +1,4 @@
-'use strict'
+const cds = require('@sap/cds')
 
 const LOG = cds.log('cds-df-synonyms')
 
