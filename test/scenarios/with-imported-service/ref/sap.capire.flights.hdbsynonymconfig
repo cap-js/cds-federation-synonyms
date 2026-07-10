@@ -1,0 +1,8 @@
+{
+  "SAP_CAPIRE_FLIGHTS_FLIGHTS": {
+    "target": {
+      "schema.configure": "sap.capire.flights/schema",
+      "object": "SAP_CAPIRE_FLIGHTS_FLIGHTS"
+    }
+  }
+}

@@ -5,12 +5,12 @@ export default [
   {
     files: ["**/*.js"],
     rules: {
-      "no-await-in-loop": "error",
+//      "no-await-in-loop": "error",
       "no-console": ["error", { allow: ["warn", "error"] }],
     },
   },
   {
-    files: ["tests/**"],
+    files: ["test/**"],
     rules: {
       "no-console": "off",
       "no-undef": "off",

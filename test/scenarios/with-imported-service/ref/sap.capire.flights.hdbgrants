@@ -1,0 +1,22 @@
+{
+  "sap.capire.flights": {
+    "object_owner": {
+      "schema_roles": [
+        {
+          "roles": [
+            "sap.capire.flights#"
+          ]
+        }
+      ]
+    },
+    "application_user": {
+      "schema_roles": [
+        {
+          "roles": [
+            "sap.capire.flights"
+          ]
+        }
+      ]
+    }
+  }
+}

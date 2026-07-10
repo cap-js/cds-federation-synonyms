@@ -1,0 +1,202 @@
+# {{$dotenv ...}} references values in file ./.env
+# Expected format of .env file:
+# domain=blabla
+# tenant_id=blabla
+# tenant_host=blabla
+# mtx_host=blabla
+
+@domain={{$dotenv domain}}
+@tenant_id={{$dotenv tenant_id}}
+@tenant_host={{$dotenv tenant_host}}
+@mtx_host={{$dotenv mtx_host}}
+
+@tenant_url=https://{{tenant_host}}.{{domain}}
+@mtx_url=https://{{mtx_host}}.{{domain}}
+
+
+### Step 0
+#
+#   go to chrome, open developer tools, execute a GET request
+#   e.g. https://{{tenant_host}}.{{domain}}/odata/v4/Travel/Flights
+
+
+### Step 1 :copy the value of "Cookie" from the request headers and assign to variable
+@cookie=
+
+### Step 2: make a GET request to the same url, using the cookie and setting x-csrf-token to "fetch
+# @name fetchCsrf
+GET {{tenant_url}}/odata/v4/Travel/Flights
+Cookie: {{cookie}}
+x-csrf-token: fetch
+
+### Step 3 (auto): extract token from response
+@csrf_token = {{fetchCsrf.response.headers.x-csrf-token}}
+
+### Step 4: Use the token and cookies in POST request
+POST {{tenant_url}}/synonymapi/echo
+Content-Type: application/json
+Cookie: {{cookie}}
+x-csrf-token: {{csrf_token}}
+
+{
+  "msg": "Hallo Du"
+}
+
+
+###############################################################################
+#
+###############################################################################
+
+###
+GET {{tenant_url}}/odata/v4/Travel/Flights
+Cookie: {{cookie}}
+x-csrf-token: fetch
+
+
+
+###############################################################################
+# manipulating the config table - via app
+###############################################################################
+
+###
+GET {{tenant_url}}/readconf/Registry
+Cookie: {{cookie}}
+
+###
+GET {{tenant_url}}/readconf/Synonyms
+Cookie: {{cookie}}
+
+###
+GET {{tenant_url}}/readconf/Status
+Cookie: {{cookie}}
+
+### read config table via OData service
+GET {{tenant_url}}/readconf/Registry
+Cookie: {{cookie}}
+
+
+### write config table via OData service
+POST {{tenant_url}}/readconf/Registry
+Content-Type: application/json
+Accept: application/json
+Cookie: {{cookie}}
+x-csrf-token: {{csrf_token}}
+
+{
+  "srv": "sap.capire.flights.data_syn", "target": "xflights-db"
+}
+
+
+###
+POST {{tenant_url}}/synonymapi/connect
+Content-Type: application/json
+Cookie: {{cookie}}
+x-csrf-token: {{csrf_token}}
+
+{
+  "srv": "sap.capire.flights.data_syn", "target": "xflights-db"
+}
+
+###
+POST {{tenant_url}}/synonymapi/unconnect
+Content-Type: application/json
+Cookie: {{cookie}}
+x-csrf-token: {{csrf_token}}
+
+{
+  "srv": "sap.capire.flights.data_syn"
+}
+
+###
+POST {{tenant_url}}/synonymapi/check
+Content-Type: application/json
+Cookie: {{cookie}}
+x-csrf-token: {{csrf_token}}
+
+{
+  "srv": "sap.capire.flights.data_syn"
+}
+
+###############################################################################
+# manipulating the config table - via mtx
+###############################################################################
+
+
+###
+GET {{tenant_url}}/-/cds/readconf/Registry(tenant='{{tenant_id}}')/Set
+Cookie: {{cookie}}
+
+###
+GET {{tenant_url}}/-/cds/readconf/Synonyms(tenant='{{tenant_id}}')/Set
+Cookie: {{cookie}}
+
+###
+GET {{tenant_url}}/-/cds/readconf/Status(tenant='{{tenant_id}}')/Set
+Cookie: {{cookie}}
+
+# ###
+# GET {{tenant_url}}/readconf/Status
+# Cookie: {{cookie}}
+
+
+
+###
+POST {{tenant_url}}/-/cds/synonymapi/echo
+Content-Type: application/json
+Cookie: {{cookie}}
+x-csrf-token: {{csrf_token}}
+
+{
+  "msg": "calling echo in mtx via tenant_url"
+}
+
+###
+POST {{tenant_url}}/-/cds/synonymapi/getConfig
+Content-Type: application/json
+Cookie: {{cookie}}
+x-csrf-token: {{csrf_token}}
+
+{
+  "tenant": "{{tenant_id}}"
+}
+
+###
+POST {{tenant_url}}/-/cds/synonymapi/check
+Content-Type: application/json
+Cookie: {{cookie}}
+x-csrf-token: {{csrf_token}}
+
+{
+  "tenant": "{{tenant_id}}",
+  "srv": "sap.capire.flights.data_syn"
+}
+
+###
+POST {{tenant_url}}/-/cds/synonymapi/connect
+Content-Type: application/json
+Cookie: {{cookie}}
+x-csrf-token: {{csrf_token}}
+
+{
+  "tenant": "{{tenant_id}}",
+  "srv": "sap.capire.flights.data_syn",
+  "target": "xflights-db",
+  "triggerUpgrade": true
+}
+
+###
+POST {{tenant_url}}/-/cds/synonymapi/unconnect
+Content-Type: application/json
+Cookie: {{cookie}}
+x-csrf-token: {{csrf_token}}
+
+{
+  "tenant": "{{tenant_id}}",
+  "srv": "sap.capire.flights.data_syn",
+  "triggerUpgrade": true
+}
+
+
+
+
+
