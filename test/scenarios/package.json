@@ -1,0 +1,15 @@
+{
+  "name": "cds-test-synonyms",
+  "version": "1.0.0",
+  "dependencies": {
+    "@sap/cds": "*",
+    "@cap-js/cds-federation-synonyms": "file:../.."
+  },
+  "cds": {
+    "log": {
+      "levels": {
+        "cds-federation-synonyms": "debug"
+      }
+    }
+  }
+}

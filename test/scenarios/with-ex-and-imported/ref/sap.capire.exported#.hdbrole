@@ -1,0 +1,14 @@
+{
+  "role": {
+    "name": "sap.capire.exported#",
+    "object_privileges": [
+      {
+        "name": "SAP_CAPIRE_EXPORTED_SOMEENTITY",
+        "type": "TABLE",
+        "privileges_with_grant_option": [
+          "SELECT"
+        ]
+      }
+    ]
+  }
+}

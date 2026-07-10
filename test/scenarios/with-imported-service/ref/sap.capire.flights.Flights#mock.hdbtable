@@ -1,0 +1,5 @@
+COLUMN TABLE sap_capire_flights_Flights#mock (
+  ID INTEGER NOT NULL,
+  carrier NVARCHAR(5000),
+  PRIMARY KEY(ID)
+)

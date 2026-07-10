@@ -1,0 +1,7 @@
+{
+  "SAP_CAPIRE_FLIGHTS_FLIGHTS": {
+    "target": {
+      "object": "SAP_CAPIRE_FLIGHTS_FLIGHTS#MOCK"
+    }
+  }
+}
