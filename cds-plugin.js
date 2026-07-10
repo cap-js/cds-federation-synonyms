@@ -1,5 +1,7 @@
 const cds = require('@sap/cds');
 
+
+
 const LOG = cds.log('cds-federation-synonyms')
 
 LOG.debug('===== cds-plugin.js is running');
