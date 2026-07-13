@@ -4,6 +4,8 @@
 
 ## About this project
 
+CDS plugin for SAP HANA synonym-based data federation.
+
 This plugin is still **experimental**.
 
 For CAP applications using SAP HANA as database, this plugin enables
