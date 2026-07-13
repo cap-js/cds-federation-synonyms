@@ -26,8 +26,8 @@ to learn about the basics.
   if Native Multitenancy in SAP HANA Cloud is switched on, live in the same tenant.
 
 The plugin uses two components which are under SAP properity licesenses. You need to review and accept them if you consume the plugin:
-* @sap/hdi
-* @sap/xssec
+* [@sap/hdi](https://www.npmjs.com/package/@sap/hdi)
+* [@sap/xssec](https://www.npmjs.com/package/@sap/xssec)
 
 
 ## Usage
@@ -36,7 +36,7 @@ Install the plugin both in the provider and in the consumer app.
 If the consumer uses multi-tenancy, install the plugin in the consumer's MTX sidecar, too.
 
 ```sh
-npm install git+https://github.tools.sap/cap/cds-df-synonyms.git
+npm install https://github.com/cap-js/cds-federation-synonyms.git
 ```
 
 ### Provider
