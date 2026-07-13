@@ -1,0 +1,12 @@
+{
+  "com.sap.GroundArrangements.Hotels#syn": {
+    "target": {
+      "object": "com.sap.GroundArrangements.Hotels#mock"
+    }
+  },
+  "com.sap.GroundArrangements.RentalCars#syn": {
+    "target": {
+      "object": "com.sap.GroundArrangements.RentalCars#mock"
+    }
+  }
+}

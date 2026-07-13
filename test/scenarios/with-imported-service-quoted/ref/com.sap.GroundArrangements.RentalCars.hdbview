@@ -1,0 +1,7 @@
+VIEW com_sap_GroundArrangements_RentalCars as select
+  "Id-1"         as "ID-1",
+  "Id-2"         as "ID-2",
+  "Make"         as "MAKE",
+  "Model"        as "MODEL",
+  "LicensePlate" as "LICENSEPLATE"
+from "com.sap.GroundArrangements.RentalCars#syn"

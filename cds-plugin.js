@@ -12,5 +12,5 @@ if (cds?.env?.data_integration === false) {
   LOG.info('===== build-plugin.js deactivated');
 }
 else {
-  require('./lib/build-plugin.js')()  // run the code that registers the build hooks
+  require('./lib/build-plugin.js')()  // run the code that hooks into the build
 }

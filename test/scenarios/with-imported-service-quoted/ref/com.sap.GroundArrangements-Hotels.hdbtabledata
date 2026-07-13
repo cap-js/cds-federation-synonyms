@@ -1,0 +1,37 @@
+{
+  "format_version": 1,
+  "imports": [
+    {
+      "target_table": "com.sap.GroundArrangements.Hotels#mock",
+      "source_data": {
+        "data_type": "CSV",
+        "file_name": "com.sap.GroundArrangements-Hotels.csv",
+        "has_header": true,
+        "type_config": {
+          "delimiter": ","
+        }
+      },
+      "import_settings": {
+        "import_columns": [
+          "Id",
+          "Name",
+          "Address_Country",
+          "Address_City",
+          "Address_Street",
+          "Rating",
+          "PricePerNight"
+        ],
+        "include_filter": []
+      },
+      "column_mappings": {
+        "Id":              "Id",
+        "Name":            "Name",
+        "Address_Country": "Address_Country",
+        "Address_City":    "Address_City",
+        "Address_Street":  "Address_Street",
+        "Rating":          "Rating",
+        "PricePerNight":   "PricePerNight"
+      }
+    }
+  ]
+}

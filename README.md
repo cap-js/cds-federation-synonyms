@@ -1,6 +1,6 @@
 # Welcome to @cap-js/cds-federation-synonyms
 
-<!-- add reuse badge -->
+[![REUSE status](https://api.reuse.software/badge/github.com/cap-js/cds-federation-synonyms)](https://api.reuse.software/info/github.com/cap-js/cds-federation-synonyms)
 
 ## About this project
 
