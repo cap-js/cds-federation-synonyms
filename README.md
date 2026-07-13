@@ -36,7 +36,7 @@ Install the plugin both in the provider and in the consumer app.
 If the consumer uses multi-tenancy, install the plugin in the consumer's MTX sidecar, too.
 
 ```sh
-npm install https://github.com/cap-js/cds-federation-synonyms.git
+npm install git+https://github.com/cap-js/cds-federation-synonyms.git
 ```
 
 ### Provider
