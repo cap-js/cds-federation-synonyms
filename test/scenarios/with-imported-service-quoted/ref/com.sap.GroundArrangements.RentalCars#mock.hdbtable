@@ -1,0 +1,8 @@
+COLUMN TABLE "com.sap.GroundArrangements.RentalCars#mock" (
+  "Id-1" INTEGER NOT NULL,
+  "Id-2" NVARCHAR(2) NOT NULL,
+  "Make" NVARCHAR(50),
+  "Model" NVARCHAR(50),
+  "LicensePlate" NVARCHAR(20),
+  PRIMARY KEY("Id-1", "Id-2")
+)

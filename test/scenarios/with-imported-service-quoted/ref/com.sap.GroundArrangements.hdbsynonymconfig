@@ -1,0 +1,14 @@
+{
+  "com.sap.GroundArrangements.Hotels#syn": {
+    "target": {
+      "schema.configure": "com.sap.GroundArrangements/schema",
+      "object": "Hotels"
+    }
+  },
+  "com.sap.GroundArrangements.RentalCars#syn": {
+    "target": {
+      "schema.configure": "com.sap.GroundArrangements/schema",
+      "object": "RentalCars"
+    }
+  }
+}

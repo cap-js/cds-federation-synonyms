@@ -388,6 +388,106 @@ describe('when building', () => {
     })
   })
 
+  describe('a model with an imported data service using quoted names', () => {
+    let OUT_SRC_DIR, OUT_CFG_DIR, DEST_DIR, TEMP_DIR, BUILD_LOGS
+    const scenario_folder = 'with-imported-service-quoted'
+    const serviceName = 'com.sap.GroundArrangements'
+
+    beforeAll(() => {
+      ({ OUT_SRC_DIR, OUT_CFG_DIR, DEST_DIR, TEMP_DIR } = setupTempOutputDir())
+      BUILD_LOGS = buildForSynonyms(path.join(scenario_folder, 'model'), DEST_DIR)
+      expect(BUILD_LOGS).to.be.an('array').that.is.not.empty
+    })
+    afterAll(() => cleanupTempOutputDir(TEMP_DIR))
+
+    it('should report that plugin is running', () => {
+      const pluginLogs = BUILD_LOGS.filter(line => line.startsWith('[cds-federation-synonyms]'))
+      expect(pluginLogs.some(line => line.match(/cds-plugin.js is running/i))).to.be.true
+    })
+
+    it('should report that no exported data service was found', () => {
+      const pluginLogs = BUILD_LOGS.filter(line => line.startsWith('[cds-federation-synonyms]'))
+      expect(pluginLogs.some(line => line.match(/Exported data services:\s*$/i))).to.be.true
+    })
+
+    it('should report that imported data services were found', () => {
+      const pluginLogs = BUILD_LOGS.filter(line => line.startsWith('[cds-federation-synonyms]'))
+      expect(pluginLogs.some(line => line.match(/Imported data services: com.sap.GroundArrangements\s*$/i))).to.be.true
+    })
+
+    it('should generate mock hdbtable files', () => {
+      const filePath1 = path.join(OUT_SRC_DIR, `${serviceName}.Hotels#mock.hdbtable`)
+      expect(fs.existsSync(filePath1)).to.be.true
+      const content1 = fs.readFileSync(filePath1, 'utf-8').replaceAll('\r\n', '\n')
+
+      const refPath1 = getRefFilePath(scenario_folder, `${serviceName}.Hotels#mock.hdbtable`)
+      const refContent1 = fs.readFileSync(refPath1, 'utf-8').replaceAll('\r\n', '\n')
+      expect(content1).to.equal(refContent1)
+      // ------------------------------------------------------------------------------------------
+      const filePath2 = path.join(OUT_SRC_DIR, `${serviceName}.RentalCars#mock.hdbtable`)
+      expect(fs.existsSync(filePath2)).to.be.true
+      const content2 = fs.readFileSync(filePath2, 'utf-8').replaceAll('\r\n', '\n')
+
+      const refPath2 = getRefFilePath(scenario_folder, `${serviceName}.RentalCars#mock.hdbtable`)
+      const refContent2 = fs.readFileSync(refPath2, 'utf-8').replaceAll('\r\n', '\n')
+      expect(content2).to.equal(refContent2)
+    })
+
+    it('should generate hdbtabledata file', () => {
+      const DATA_DIR = path.join(OUT_SRC_DIR, 'data')
+
+      const filePath1 = path.join(DATA_DIR, `${serviceName}-Hotels.hdbtabledata`)
+      expect(fs.existsSync(filePath1)).to.be.true
+      const content1 = JSON.parse(fs.readFileSync(filePath1, 'utf-8'))
+
+      const refPath1 = getRefFilePath(scenario_folder, `${serviceName}-Hotels.hdbtabledata`)
+      const refContent1 = JSON.parse(fs.readFileSync(refPath1, 'utf-8'))
+      expect(content1).to.deep.equal(refContent1)
+      // ------------------------------------------------------------------------------------------
+      const filePath2 = path.join(DATA_DIR, `${serviceName}-RentalCars.hdbtabledata`)
+      expect(fs.existsSync(filePath2)).to.be.true
+      const content2 = JSON.parse(fs.readFileSync(filePath2, 'utf-8'))
+
+      const refPath2 = getRefFilePath(scenario_folder, `${serviceName}-RentalCars.hdbtabledata`)
+      const refContent2 = JSON.parse(fs.readFileSync(refPath2, 'utf-8'))
+      expect(content2).to.deep.equal(refContent2)
+    })
+
+    it('should generate a hdbsynonym file', () => {
+      const filePath = path.join(OUT_SRC_DIR, `${serviceName}.hdbsynonym`)
+      expect(fs.existsSync(filePath)).to.be.true
+      const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'))
+
+      const refPath = getRefFilePath(scenario_folder, `${serviceName}.hdbsynonym`)
+      const refContent = JSON.parse(fs.readFileSync(refPath, 'utf-8'))
+      expect(content).to.deep.equal(refContent)
+    })
+
+    it('should generate a hdbsynonymconfig file', () => {
+      const filePath = path.join(OUT_CFG_DIR, `${serviceName}.hdbsynonymconfig`)
+      expect(fs.existsSync(filePath)).to.be.true
+      const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'))
+
+      const refPath = getRefFilePath(scenario_folder, `${serviceName}.hdbsynonymconfig`)
+      const refContent = JSON.parse(fs.readFileSync(refPath, 'utf-8'))
+      expect(content).to.deep.equal(refContent)
+    })
+
+    it('should generate a hdbgrants file', () => {
+      const filePath = path.join(OUT_SRC_DIR, `${serviceName}.hdbgrants`)
+      expect(fs.existsSync(filePath)).to.be.true
+      const content = JSON.parse(fs.readFileSync(filePath, 'utf-8'))
+
+      const refPath = getRefFilePath(scenario_folder, `${serviceName}.hdbgrants`)
+      const refContent = JSON.parse(fs.readFileSync(refPath, 'utf-8'))
+      expect(content).to.deep.equal(refContent)
+    })
+
+    it('should not generate any hdbrole files', () => {
+      const files = fs.readdirSync(OUT_SRC_DIR, ).filter(file => file.endsWith('.hdbrole'))
+      expect(files).to.be.an('array').that.is.empty
+    })
+  })
 
 
 })

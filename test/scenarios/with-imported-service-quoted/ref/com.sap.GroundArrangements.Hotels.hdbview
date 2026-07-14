@@ -1,0 +1,9 @@
+VIEW com_sap_GroundArrangements_Hotels as select
+  "Id"              as "ID",
+  "Name"            as "NAME",
+  "Address_Country" as "ADDRESS_COUNTRY",
+  "Address_City"    as "ADDRESS_CITY",
+  "Address_Street"  as "ADDRESS_STREET",
+  "Rating"          as "RATING",
+  "PricePerNight"   as "PRICEPERNIGHT"
+from "com.sap.GroundArrangements.Hotels#syn"

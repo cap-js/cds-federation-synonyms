@@ -1,0 +1,10 @@
+COLUMN TABLE "com.sap.GroundArrangements.Hotels#mock" (
+  "Id" INTEGER NOT NULL,
+  "Name" NVARCHAR(100),
+  "Address_Country" NVARCHAR(100),
+  "Address_City" NVARCHAR(100),
+  "Address_Street" NVARCHAR(100),
+  "Rating" INTEGER,
+  "PricePerNight" DECIMAL(9, 2),
+  PRIMARY KEY("Id")
+)
