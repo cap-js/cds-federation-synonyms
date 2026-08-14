@@ -38,6 +38,6 @@ it is more flexible to introduce some place-holders:
           - name: xflights-db                     # <---
             group: SERVICE_REPLACEMENTS           # <---
             properties:                           # <---
-              key: sap.capire.flights.data_syn    # <---
+              key: sap.capire.flights.FlightsService_syn    # <---
               service: ~{prov-db-hdi}             # <---
     ```
