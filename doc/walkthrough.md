@@ -373,11 +373,11 @@ cd ../..
 
 In _mtx/sidecar/package.json_, add this section
 to bind to the HANA service manager of xflights and to ensure that we deploy to xtravels-db:
-```json
+```jsonc
   "cds": {
     "profile": "mtx-sidecar",
     "requires": {
-      "db": {
+      "db": {  // <- deploy target is identified by name "db"
         "kind": "hana",
         "vcap": {
           "name": "xtravels-db"
@@ -392,6 +392,8 @@ to bind to the HANA service manager of xflights and to ensure that we deploy to 
     }
   }
 ```
+
+Note: The entry for the HDI container where we want to deploy to _must_ have the name `db`.
 
 xtravels-mtx needs to be bound to xflights-db. This can be done either statically via _mta.yaml_,
 or dynamically after the deployment. Dynamic binding is necessary when you can't control the
