@@ -253,6 +253,11 @@ describe('when building', () => {
       const files = fs.readdirSync(OUT_SRC_DIR, ).filter(file => file.endsWith('.hdbrole'))
       expect(files).to.be.an('array').that.is.empty
     })
+
+    it('should not generate any hdbindex files', () => {
+      const files = fs.readdirSync(OUT_SRC_DIR, ).filter(file => file.endsWith('.hdbindex'))
+      expect(files).to.be.an('array').that.is.empty
+    })
   })
 
 
