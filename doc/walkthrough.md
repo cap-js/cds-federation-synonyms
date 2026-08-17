@@ -50,13 +50,15 @@ For our xflights example, we don't have to start from scratch:
 xflights already defines an API service for service-level data federation. As the modelling is the
 same for all kinds of data federation, we can just copy this service and adapt it to our needs.
 Copy file _srv/data-service.cds_ to _srv/data-service-syn.cds_ and make the following adjustments:
-* Rename the service to `sap.capire.flights.data_syn`.
-* Remove annotations `@hcql @rest @odata @graphql` that have been added for service level data federation.
+* Rename the service to `FlightsService_syn`.
+* Remove annotations `@hcql @rest @odata @graphql ...` that have been added for service level data federation.
 * Add annotation `@data.product: 'via-synonym'` to enable data federation via synonyms:
 
 ```cds
+namespace sap.capire.flights;
+
 @data.product: 'via-synonym'
-service sap.capire.flights.data_syn {
+service FlightsService_syn {
   // ...
 }
 ```
@@ -139,14 +141,14 @@ entities are referenced via the `using` directive at the top of the file.
 Replace the names there with the name of the API service and the package name defined above:
 Change
 ```cds
-using { sap.capire.flights.data as external } from '@capire/xflights-data';
+using { sap.capire.flights.FlightsService as external } from '@capire/xflights-data';
 ```
 to
 ```cds
-using { sap.capire.flights.data_syn as external } from '@capire/xflights-data-syn';
+using { sap.capire.flights.FlightsService_syn as external } from '@capire/xflights-data-syn';
 ```
 
-In _srv/travel-service.js_, there is a function `service_integration()` that is
+In _srv/travel-service/service.js_, there is a function `service_integration()` that is
 written for the use case Data Federation via Service-level replication and
 doesn't work for our example. Remove the function and its invocation in `init()`.
 
@@ -166,12 +168,14 @@ cds add hana
 
 Install the synonyms plugin with
 ```sh
-npm install -D git+https://github.tools.sap/cap/cds-federation-synonyms.git
+npm install -D git+https://github.com/cap-js/cds-federation-synonyms.git
 ```
 
-Add to _db/undeploy.json_:
+Create new file _db/undeploy.json_ with this content (if the file already exists, add the entry for `*.hdbrole`):
 ```
-"src/gen/**/*.hdbrole"
+[
+  "src/gen/**/*.hdbrole"
+]
 ```
 
 
@@ -184,13 +188,15 @@ cds add hana
 
 Install the synonyms plugin with
 ```sh
-npm install -D git+https://github.tools.sap/cap/cds-federation-synonyms.git
+npm install -D git+https://github.com/cap-js/cds-federation-synonyms.git
 ```
 
-Add to _db/undeploy.json_:
+Create new file _db/undeploy.json_ with this content (if the file already exists, add the respective entries):
 ```
-"src/gen/**/*.hdbsynonym",
-"cfg/gen/**/*.hdbsynonymconfig"
+[
+  "src/gen/**/*.hdbsynonym",
+  "cfg/gen/**/*.hdbsynonymconfig"
+]
 ```
 
 
@@ -217,8 +223,8 @@ Then we can deploy with the _.hdbsynonymconfig_ file and thus connect the synony
 
 * Add a file _db/.hdiignore_ with the following content:
     ```txt
-    **/sap.capire.flights.data_syn.hdbgrants
-    **/sap.capire.flights.data_syn.hdbsynonymconfig
+    **/sap.capire.flights.FlightsService_syn.hdbgrants
+    **/sap.capire.flights.FlightsService_syn.hdbsynonymconfig
     ```
 * Deploy with
     ```sh
@@ -228,7 +234,7 @@ Then we can deploy with the _.hdbsynonymconfig_ file and thus connect the synony
 * Provide a _.env_ file with the following content:
     ```sh
     TARGET_CONTAINER=db
-    SERVICE_REPLACEMENTS='[{"key":"sap.capire.flights.data_syn","service":"xflights-db"}]'
+    SERVICE_REPLACEMENTS='[{"key":"sap.capire.flights.FlightsService_syn","service":"xflights-db"}]'
     ```
     In the `SERVICE_REPLACEMENTS`, `key` is the name of the API service,
     `service` is the name of the producer's HDI container.
@@ -275,13 +281,13 @@ In _mta.yaml_ of xtravels:
         ...
         requires:
           - name: xtravels-db
-            properties:                              # <---
-              TARGET_CONTAINER: xtravels-db          # <---
-          - name: xflights-db                        # <---
-            group: SERVICE_REPLACEMENTS              # <---
-            properties:                              # <---
-              key: sap.capire.flights.data_syn       # <---
-              service: xflights-db                   # <---
+            properties:                                   # <---
+              TARGET_CONTAINER: xtravels-db               # <---
+          - name: xflights-db                             # <---
+            group: SERVICE_REPLACEMENTS                   # <---
+            properties:                                   # <---
+              key: sap.capire.flights.FlightsService_syn  # <---
+              service: xflights-db                        # <---
     ```
 
 <!-- Workspace setup:
@@ -361,17 +367,17 @@ After "npm install", do
 Install the synonyms plugin also in _mtx/sidecar_ (here a dev dependency is not sufficient):
 ```sh
 cd mtx/sidecar
-npm install git+https://github.tools.sap/cap/cds-federation-synonyms.git
+npm install git+https://github.com/cap-js/cds-federation-synonyms.git
 cd ../..
 ```
 
 In _mtx/sidecar/package.json_, add this section
 to bind to the HANA service manager of xflights and to ensure that we deploy to xtravels-db:
-```json
+```jsonc
   "cds": {
     "profile": "mtx-sidecar",
     "requires": {
-      "db": {
+      "db": {  // <- deploy target is identified by name "db"
         "kind": "hana",
         "vcap": {
           "name": "xtravels-db"
@@ -386,6 +392,8 @@ to bind to the HANA service manager of xflights and to ensure that we deploy to 
     }
   }
 ```
+
+Note: The entry for the HDI container where we want to deploy to _must_ have the name `db`.
 
 xtravels-mtx needs to be bound to xflights-db. This can be done either statically via _mta.yaml_,
 or dynamically after the deployment. Dynamic binding is necessary when you can't control the
@@ -439,7 +447,7 @@ https://sf4-cdsruntime-sflight-dev-xtravels.cfapps.sap.hana.ondemand.com/odata/v
 You should see the data fed into the local mock tables via the _csv_ files of the imported API.
 
 
-To switch the synonyms, i.e. connect/disconnect the imported service `sap.capire.flights.data_syn` to/from
+To switch the synonyms, i.e. connect/disconnect the imported service `sap.capire.flights.FlightsService_syn` to/from
 the `xflights-db` HDI container, use the [ConfigService API](./config-service-api.md) in xtravels-mtx.
 
 Connect the synonyms:
@@ -448,7 +456,7 @@ POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/connect
 
 {
   "tenant": "{{tenant_id}}",
-  "srv": "sap.capire.flights.data_syn",
+  "srv": "sap.capire.flights.FlightsService_syn",
   "target": "xflights-db",
   "triggerUpgrade": true
 }
@@ -462,7 +470,7 @@ POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/unconnect
 
 {
   "tenant": "{{tenant_id}}",
-  "srv": "sap.capire.flights.data_syn",
+  "srv": "sap.capire.flights.FlightsService_syn",
   "triggerUpgrade": true
 }
 ```
@@ -470,13 +478,13 @@ POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/unconnect
 
 ### Checking synonym status
 
-Check the connection status for service `sap.capire.flights.data_syn`:
+Check the connection status for service `sap.capire.flights.FlightsService_syn`:
 ```http
 POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/check
 
 {
   "tenant": "{{tenant_id}}",
-  "srv": "sap.capire.flights.data_syn"
+  "srv": "sap.capire.flights.FlightsService_syn"
 }
 ```
 

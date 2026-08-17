@@ -25,24 +25,24 @@ cds build --for hana
 and have a look at the generated HDI files in folder _gen/db/src/gen_.
 
 There are two role definition files,
-_sap.capire.flights.data_syn#.hdbrole_ and _sap.capire.flights.data_syn.hdbrole_,
+_sap.capire.flights.FlightsService_syn#.hdbrole_ and _sap.capire.flights.FlightsService_syn.hdbrole_,
 that provide `SELECT` access to the HANA views that correspond to the entities
 in the API service.
 
-File _sap.capire.flights.data\_syn#.hdbrole_:
+File _sap.capire.flights.FlightsService\_syn#.hdbrole_:
 
 ```jsonc
 {
   "role": {
-    "name": "sap.capire.flights.data_syn#",
+    "name": "sap.capire.flights.FlightsService_syn#",
     "object_privileges": [
       {
-        "name": "SAP_CAPIRE_FLIGHTS_DATA_SYN_FLIGHTS",
+        "name": "SAP_CAPIRE_FLIGHTS_FLIGHTSSERVICE_SYN_FLIGHTS",
         "type": "VIEW",
         "privileges_with_grant_option": [ "SELECT" ]
       },
       {
-        "name": "SAP_CAPIRE_FLIGHTS_DATA_SYN_AIRLINES",
+        "name": "SAP_CAPIRE_FLIGHTS_FLIGHTSSERVICE_SYN_AIRLINES",
         "type": "VIEW",
         "privileges_with_grant_option": [ "SELECT" ]
       },
@@ -67,16 +67,16 @@ and have a look at the generated HDI files in folder _gen/db_:
 ```
 gen/db
 ├── src/gen
-|   ├── sap.capire.flights.data_syn.Airlines_#proxy.hdbtable
-|   ├── sap.capire.flights.data_syn.Airports_#proxy.hdbtable
-|   ├── sap.capire.flights.data_syn.Flights_#proxy.hdbtable
-|   ├── sap.capire.flights.data_syn.Supplements_#proxy.hdbtable
-|   ├── sap.capire.flights.data_syn.SupplementTypes_#proxy.hdbtable
-|   ├── sap.capire.flights.data_syn.hdbsynonym
-|   ├── sap.capire.flights.data_syn.hdbgrants
+|   ├── sap.capire.flights.FlightsService_syn.Airlines_#proxy.hdbtable
+|   ├── sap.capire.flights.FlightsService_syn.Airports_#proxy.hdbtable
+|   ├── sap.capire.flights.FlightsService_syn.Flights_#proxy.hdbtable
+|   ├── sap.capire.flights.FlightsService_syn.Supplements_#proxy.hdbtable
+|   ├── sap.capire.flights.FlightsService_syn.SupplementTypes_#proxy.hdbtable
+|   ├── sap.capire.flights.FlightsService_syn.hdbsynonym
+|   ├── sap.capire.flights.FlightsService_syn.hdbgrants
 |   └── ...
 └── cfg/gen
-    └── sap.capire.flights.data_syn.hdbsynonymconfig
+    └── sap.capire.flights.FlightsService_syn.hdbsynonymconfig
 ```
 
 For each entity in the imported service there is a local mock table
@@ -86,14 +86,14 @@ All synonyms for an imported service are defined in one _.hdbsynonym_ file.
 File _sap.capire.flights.data\_syn.hdbsynonym_:
 ```jsonc
 {
-  "SAP_CAPIRE_FLIGHTS_DATA_SYN_FLIGHTS": {
+  "SAP_CAPIRE_FLIGHTS_FLIGHTSSERVICE_SYN_FLIGHTS": {
     "target": {
-      "object": "SAP_CAPIRE_FLIGHTS_DATA_SYN_FLIGHTS#MOCK"
+      "object": "SAP_CAPIRE_FLIGHTS_FLIGHTSSERVICE_SYN_FLIGHTS#MOCK"
     }
   },
-  "SAP_CAPIRE_FLIGHTS_DATA_SYN_AIRLINES": {
+  "SAP_CAPIRE_FLIGHTS_FLIGHTSSERVICE_SYN_AIRLINES": {
     "target": {
-      "object": "SAP_CAPIRE_FLIGHTS_DATA_SYN_AIRLINES#MOCK"
+      "object": "SAP_CAPIRE_FLIGHTS_FLIGHTSSERVICE_SYN_AIRLINES#MOCK"
     }
   },
   // ...
@@ -114,16 +114,16 @@ name of the producer's HDI container database schema.
 File _sap.capire.flights.data\_syn.hdbsynonymconfig_:
 ```jsonc
 {
-  "SAP_CAPIRE_FLIGHTS_DATA_SYN_FLIGHTS": {
+  "SAP_CAPIRE_FLIGHTS_FLIGHTSSERVICE_SYN_FLIGHTS": {
     "target": {
-      "schema.configure": "sap.capire.flights.data_syn/schema",
-      "object": "SAP_CAPIRE_FLIGHTS_DATA_SYN_FLIGHTS"
+      "schema.configure": "sap.capire.flights.FlightsService_syn/schema",
+      "object": "SAP_CAPIRE_FLIGHTS_FLIGHTSSERVICE_SYN_FLIGHTS"
     }
   },
-  "SAP_CAPIRE_FLIGHTS_DATA_SYN_AIRLINES": {
+  "SAP_CAPIRE_FLIGHTS_FLIGHTSSERVICE_SYN_AIRLINES": {
     "target": {
-      "schema.configure": "sap.capire.flights.data_syn/schema",
-      "object": "SAP_CAPIRE_FLIGHTS_DATA_SYN_AIRLINES"
+      "schema.configure": "sap.capire.flights.FlightsService_syn/schema",
+      "object": "SAP_CAPIRE_FLIGHTS_FLIGHTSSERVICE_SYN_AIRLINES"
     }
   },
   // ...
@@ -144,18 +144,18 @@ is mapped to a physical service with the required credentials.
 File _sap.capire.flights.data\_syn.hdbgrants_:
 ```jsonc
 {
-  "sap.capire.flights.data_syn": {
+  "sap.capire.flights.FlightsService_syn": {
     "object_owner": {
       "schema_roles": [
         {
-          "roles": [ "sap.capire.flights.data_syn#" ]
+          "roles": [ "sap.capire.flights.FlightsService_syn#" ]
         }
       ]
     },
     "application_user": {
       "schema_roles": [
         {
-          "roles": [ "sap.capire.flights.data_syn"]
+          "roles": [ "sap.capire.flights.FlightsService_syn"]
         }
       ]
     }
@@ -181,7 +181,7 @@ When the HANA deployment is controlled via an _mta.yaml_, you can alternatively 
 "exclude-filter" via the "HDI_DEPLOY_OPTION" instead of providing a real _.hdiignore_ file.
 
 To deploy in "connected" state (i.e. synonyms point to tables/views in xflights), the logical
-service name `sap.capire.flights.data_syn` appearing in the generated _.hdbsynonymconfig_ and
+service name `sap.capire.flights.FlightsService_syn` appearing in the generated _.hdbsynonymconfig_ and
 _.hdbgrants_ files needs to be resolved to a physical service.
 This physical service then provides the actual name of the target schema for the synonyms
 as well as the credentials for granting access to that schema.
