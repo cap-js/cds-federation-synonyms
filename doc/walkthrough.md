@@ -421,6 +421,21 @@ which fails, if xflights-db is required in the _mta.yaml_ of xtravels.
     ```
 * Dynamic binding: Don't mention xflights-db in _mta.yaml_
 
+You can provide the connection info for the synonym as a static config in
+the xtravel _package.json_ (works only with static binding):
+```jsonc
+  "cds": {
+    "requires": {
+      "sap.capire.flights.FlightsService_syn": {
+        "kind": "hana-synonyms",
+        "service-manager": "xflights-db"
+      },
+      // ...
+    }
+  }
+```
+
+
 Build and deploy:
 ```sh
 mbt build
@@ -433,6 +448,9 @@ cf bind-service xtravels-mtx xflights-db
 cf restage xtravels-mtx
 ```
 
+If you don't want to or cannot use a static config for the connection info, you
+can connect/unconnect the synonyms via an API. This dynamic configuration
+overrules the static config.
 
 ### Connecting synonyms
 
