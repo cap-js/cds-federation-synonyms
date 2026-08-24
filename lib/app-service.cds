@@ -21,6 +21,7 @@ service ConfigService {
   action echo     (msg: String)                                          returns String;
   action getConfig()                                                     returns String;
   action check    (srv: String)                                          returns String;
-  action connect  (srv: String, target: String, triggerUpgrade: Boolean) returns String;
-  action unconnect(srv: String,                 triggerUpgrade: Boolean) returns String;
+  // target: service manager name for the target container, null = explicitly unconnect (overrides static config)
+  action setDynamicConfig   (srv: String, target: String, triggerUpgrade: Boolean) returns String;
+  action deleteDynamicConfig(srv: String,                 triggerUpgrade: Boolean) returns String;
 }

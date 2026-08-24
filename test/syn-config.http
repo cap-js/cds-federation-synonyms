@@ -102,7 +102,7 @@ x-csrf-token: {{csrf_token}}
 }
 
 ###
-POST {{tenant_url}}/synonymapi/connect
+POST {{tenant_url}}/synonymapi/setDynamicConfig
 Content-Type: application/json
 Cookie: {{cookie}}
 x-csrf-token: {{csrf_token}}
@@ -112,7 +112,7 @@ x-csrf-token: {{csrf_token}}
 }
 
 ###
-POST {{tenant_url}}/synonymapi/unconnect
+POST {{tenant_url}}/synonymapi/deleteDynamicConfig
 Content-Type: application/json
 Cookie: {{cookie}}
 x-csrf-token: {{csrf_token}}
@@ -174,7 +174,7 @@ x-csrf-token: {{csrf_token}}
 }
 
 ###
-POST {{tenant_url}}/-/cds/synonymapi/connect
+POST {{tenant_url}}/-/cds/synonymapi/setDynamicConfig
 Content-Type: application/json
 Cookie: {{cookie}}
 x-csrf-token: {{csrf_token}}
@@ -187,7 +187,7 @@ x-csrf-token: {{csrf_token}}
 }
 
 ###
-POST {{tenant_url}}/-/cds/synonymapi/unconnect
+POST {{tenant_url}}/-/cds/synonymapi/deleteDynamicConfig
 Content-Type: application/json
 Cookie: {{cookie}}
 x-csrf-token: {{csrf_token}}

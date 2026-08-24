@@ -209,7 +209,7 @@ Once tenant subscription has happened for a provider and consumer, the synonyms 
 be connected via an API in the consumer app that is provided via the plugin.
 Connect the imported service with the provider's service manager via
 ```http
-POST {{server}}/setconf/connect
+POST {{server}}/setconf/setDynamicConfig
 
 {
   "srv": "datasrv", "target": "provider-db"

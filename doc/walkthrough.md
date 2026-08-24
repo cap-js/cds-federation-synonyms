@@ -450,9 +450,9 @@ You should see the data fed into the local mock tables via the _csv_ files of th
 To switch the synonyms, i.e. connect/disconnect the imported service `sap.capire.flights.FlightsService_syn` to/from
 the `xflights-db` HDI container, use the [ConfigService API](./config-service-api.md) in xtravels-mtx.
 
-Connect the synonyms:
+Set dynamic config (connect the synonyms):
 ```http
-POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/connect
+POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/setDynamicConfig
 
 {
   "tenant": "{{tenant_id}}",
@@ -464,9 +464,9 @@ POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/connect
 
 Query Flights again, you should now see the data coming directly from the xflights app.
 
-Disconnect the synonyms:
+Delete dynamic config (disconnect the synonyms):
 ```http
-POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/unconnect
+POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/deleteDynamicConfig
 
 {
   "tenant": "{{tenant_id}}",

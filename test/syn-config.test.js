@@ -75,14 +75,14 @@ if (!env) {
       return JSON.parse(body)
     }
 
-    async function connect() {
-      const { status, body } = await post('connect', { tenant: tenant_id, srv: SRV, target: TARGET, triggerUpgrade: TRIGGER_UPGRADE })
+    async function setDynamicConfig() {
+      const { status, body } = await post('setDynamicConfig', { tenant: tenant_id, srv: SRV, target: TARGET, triggerUpgrade: TRIGGER_UPGRADE })
       expect(status).toBe(200)
       return body
     }
 
-    async function unconnect() {
-      const { status, body } = await post('unconnect', { tenant: tenant_id, srv: SRV, triggerUpgrade: TRIGGER_UPGRADE })
+    async function deleteDynamicConfig() {
+      const { status, body } = await post('deleteDynamicConfig', { tenant: tenant_id, srv: SRV, triggerUpgrade: TRIGGER_UPGRADE })
       expect(status).toBe(200)
       return body
     }
@@ -110,7 +110,7 @@ if (!env) {
     })
 
 
-    describe('mtx synonymapi - connect/unconnect sequence', () => {
+    describe('mtx synonymapi - setDynamicConfig/deleteDynamicConfig sequence', () => {
 
       it('getConfig (1) - initial state', async () => {
         const config = await getConfig()
@@ -123,86 +123,76 @@ if (!env) {
         console.log('check (1):', result)
       })
 
-      it('connect (1)', async () => {
-        const result = await connect()
-        console.log('connect (1):', result)
+      it('setDynamicConfig (1)', async () => {
+        const result = await setDynamicConfig()
+        console.log('setDynamicConfig (1):', result)
         expect(result).toMatch(SRV)
         expect(result).toMatch(TARGET)
       }, TRIGGER_UPGRADE ? UPGRADE_TIMEOUT : undefined)
 
-      it('getConfig (2) - after first connect', async () => {
+      it('getConfig (2) - after first setDynamicConfig', async () => {
         const config = await getConfig()
         expect(Array.isArray(config)).toBe(true)
-        const entry = config.find(e => e.srv === SRV && e.source === 'dynamic')
+        const entry = config.find(e => e.srv === SRV && e.source.startsWith('dynamic'))
         expect(entry).toBeDefined()
         expect(entry.target).toBe(TARGET)
         console.log('getConfig (2):', JSON.stringify(config, null, 2))
       })
 
-      it('check (2) - after first connect', async () => {
+      it('check (2) - after first setDynamicConfig', async () => {
         const result = await check()
         console.log('check (2):', result)
         expect(result['dynamic-config']).toBe('connected')
         if (TRIGGER_UPGRADE) {
           const { nConnected, nUnconnected } = parseSynonyms(result.synonyms)
-          if (staticEntry?.target === null) {
-            // static entry explicitly unconnects, overrides dynamic
-            expect(nConnected).toBe(0)
-            expect(nUnconnected).toBeGreaterThan(0)
-          } else {
-            expect(nConnected).toBeGreaterThan(0)
-            expect(nUnconnected).toBe(0)
-          }
+          // dynamic connect always wins, even if static says null
+          expect(nConnected).toBeGreaterThan(0)
+          expect(nUnconnected).toBe(0)
         }
       })
 
-      it('connect (2) - connect again (idempotent)', async () => {
-        const result = await connect()
-        console.log('connect (2):', result)
+      it('setDynamicConfig (2) - setDynamicConfig again (idempotent)', async () => {
+        const result = await setDynamicConfig()
+        console.log('setDynamicConfig (2):', result)
         expect(result).toMatch(SRV)
         expect(result).toMatch(TARGET)
       }, TRIGGER_UPGRADE ? UPGRADE_TIMEOUT : undefined)
 
-      it('getConfig (3) - after second connect', async () => {
+      it('getConfig (3) - after second setDynamicConfig', async () => {
         const config = await getConfig()
         expect(Array.isArray(config)).toBe(true)
-        const entries = config.filter(e => e.srv === SRV && e.source === 'dynamic')
+        const entries = config.filter(e => e.srv === SRV && e.source.startsWith('dynamic'))
         expect(entries).toHaveLength(1)
         console.log('getConfig (3):', JSON.stringify(config, null, 2))
       })
 
-      it('check (3) - after second connect', async () => {
+      it('check (3) - after second setDynamicConfig', async () => {
         const result = await check()
         console.log('check (3):', result)
         expect(result['dynamic-config']).toBe('connected')
         if (TRIGGER_UPGRADE) {
           const { nConnected, nUnconnected } = parseSynonyms(result.synonyms)
-          if (staticEntry?.target === null) {
-            // static entry explicitly unconnects, overrides dynamic
-            expect(nConnected).toBe(0)
-            expect(nUnconnected).toBeGreaterThan(0)
-          } else {
-            expect(nConnected).toBeGreaterThan(0)
-            expect(nUnconnected).toBe(0)
-          }
+          // dynamic connect always wins, even if static says null
+          expect(nConnected).toBeGreaterThan(0)
+          expect(nUnconnected).toBe(0)
         }
       })
 
-      it('unconnect (1)', async () => {
-        const result = await unconnect()
-        console.log('unconnect (1):', result)
+      it('deleteDynamicConfig (1)', async () => {
+        const result = await deleteDynamicConfig()
+        console.log('deleteDynamicConfig (1):', result)
         expect(result).toMatch(SRV)
       }, TRIGGER_UPGRADE ? UPGRADE_TIMEOUT : undefined)
 
-      it('getConfig (4) - after first unconnect', async () => {
+      it('getConfig (4) - after first deleteDynamicConfig', async () => {
         const config = await getConfig()
         expect(Array.isArray(config)).toBe(true)
-        const dynamicEntry = config.find(e => e.srv === SRV && e.source === 'dynamic')
+        const dynamicEntry = config.find(e => e.srv === SRV && e.source.startsWith('dynamic'))
         expect(dynamicEntry).toBeUndefined()
         console.log('getConfig (4):', JSON.stringify(config, null, 2))
       })
 
-      it('check (4) - after first unconnect', async () => {
+      it('check (4) - after first deleteDynamicConfig', async () => {
         const result = await check()
         console.log('check (4):', result)
         expect(result['dynamic-config']).toBe('not set')
@@ -218,20 +208,20 @@ if (!env) {
         }
       })
 
-      it('unconnect (2) - unconnect again (idempotent)', async () => {
-        const result = await unconnect()
-        console.log('unconnect (2):', result)
+      it('deleteDynamicConfig (2) - deleteDynamicConfig again (idempotent)', async () => {
+        const result = await deleteDynamicConfig()
+        console.log('deleteDynamicConfig (2):', result)
       }, TRIGGER_UPGRADE ? UPGRADE_TIMEOUT : undefined)
 
-      it('getConfig (5) - after second unconnect', async () => {
+      it('getConfig (5) - after second deleteDynamicConfig', async () => {
         const config = await getConfig()
         expect(Array.isArray(config)).toBe(true)
-        const dynamicEntry = config.find(e => e.srv === SRV && e.source === 'dynamic')
+        const dynamicEntry = config.find(e => e.srv === SRV && e.source.startsWith('dynamic'))
         expect(dynamicEntry).toBeUndefined()
         console.log('getConfig (5):', JSON.stringify(config, null, 2))
       })
 
-      it('check (5) - after second unconnect', async () => {
+      it('check (5) - after second deleteDynamicConfig', async () => {
         const result = await check()
         console.log('check (5):', result)
         expect(result['dynamic-config']).toBe('not set')
