@@ -422,7 +422,7 @@ which fails, if xflights-db is required in the _mta.yaml_ of xtravels.
 * Dynamic binding: Don't mention xflights-db in _mta.yaml_
 
 You can provide the connection info for the synonym as a static config in
-the xtravel _package.json_ (works only with static binding):
+the xtravel _package.json_ (requires the CF service to be bound before the app starts, i.e. via static binding or after `cf restage`):
 ```jsonc
   "cds": {
     "requires": {
