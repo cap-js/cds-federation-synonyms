@@ -1,0 +1,7 @@
+Id,Name,Address_Country,Address_City,Address_Street,Rating,PricePerNight
+1,Adlon (test),Germany,Berlin,Unter den Linden 77,5,2144.00
+2,Atlantis The Palm (test),UAE,Dubai,Crescent Road,5,1200.00
+3,Burj Al Arab (test),UAE,Dubai,Jumeirah Beach Road,5,3500.00
+4,The Ritz Paris (test),France,Paris,15 Place Vendôme,5,2800.00
+5,Hotel de Russie (test),Italy,Rome,Via del Babuino 9,5,950.00
+6,Baur au Lac (test),Switzerland,Zurich,Talstrasse 1,5,1100.00
