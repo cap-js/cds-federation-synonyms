@@ -421,6 +421,21 @@ which fails, if xflights-db is required in the _mta.yaml_ of xtravels.
     ```
 * Dynamic binding: Don't mention xflights-db in _mta.yaml_
 
+You can provide the connection info for the synonym as a static config in
+the xtravel _package.json_ (requires the CF service to be bound before the app starts, i.e. via static binding or after `cf restage`):
+```jsonc
+  "cds": {
+    "requires": {
+      "sap.capire.flights.FlightsService_syn": {
+        "kind": "hana-synonyms",
+        "service-manager": "xflights-db"
+      },
+      // ...
+    }
+  }
+```
+
+
 Build and deploy:
 ```sh
 mbt build
@@ -433,6 +448,9 @@ cf bind-service xtravels-mtx xflights-db
 cf restage xtravels-mtx
 ```
 
+If you don't want to or cannot use a static config for the connection info, you
+can connect/unconnect the synonyms via an API. This dynamic configuration
+overrules the static config.
 
 ### Connecting synonyms
 
@@ -450,9 +468,9 @@ You should see the data fed into the local mock tables via the _csv_ files of th
 To switch the synonyms, i.e. connect/disconnect the imported service `sap.capire.flights.FlightsService_syn` to/from
 the `xflights-db` HDI container, use the [ConfigService API](./config-service-api.md) in xtravels-mtx.
 
-Connect the synonyms:
+Set dynamic config (connect the synonyms):
 ```http
-POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/connect
+POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/setDynamicConfig
 
 {
   "tenant": "{{tenant_id}}",
@@ -464,9 +482,9 @@ POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/connect
 
 Query Flights again, you should now see the data coming directly from the xflights app.
 
-Disconnect the synonyms:
+Delete dynamic config (disconnect the synonyms):
 ```http
-POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/unconnect
+POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/deleteDynamicConfig
 
 {
   "tenant": "{{tenant_id}}",
