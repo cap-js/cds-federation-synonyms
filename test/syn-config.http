@@ -228,6 +228,3 @@ Authorization: Bearer {{mtx_token}}
 GET {{mtx_url}}/-/cds/jobs/pollJob(ID='{{upgrade.response.headers.x-job-id}}')
 Authorization: Bearer {{mtx_token}}
 
-
-
-
