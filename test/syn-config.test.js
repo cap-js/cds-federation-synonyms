@@ -1,13 +1,10 @@
 'use strict'
 
 // E2E test for the mtx synonymapi endpoints.
-// Requires a running deployed app and a manually obtained(!) session cookie.
+// Requires a running deployed app and tokens fetched via get-tokens.sh.
 //
-// Create test/.env with:
-//   domain=<your-domain>
-//   tenant_id=<your-tenant-id>
-//   tenant_host=<your-tenant-host>
-//   cookie=<paste cookie from browser devtools>
+// Create test/.env with (see .env-template):
+//   domain, tenant_id, mtx_host, mtx_token
 
 const SRV            = 'sap.capire.flights.FlightsService_syn'
 const TARGET         = 'xflights-db'
@@ -37,16 +34,15 @@ if (!env) {
   test.skip('syn-config E2E tests skipped: test/.env not found', () => {})
 } else {
 
-  const { domain, tenant_id, tenant_host, cookie } = env
-  const missingVars = ['domain', 'tenant_id', 'tenant_host', 'cookie'].filter(k => !env[k])
+  const { domain, tenant_id, mtx_host, mtx_token } = env
+  const missingVars = ['domain', 'tenant_id', 'mtx_host', 'mtx_token'].filter(k => !env[k])
   if (missingVars.length) {
     test.skip(`syn-config E2E tests skipped: missing .env vars: ${missingVars.join(', ')}`, () => {})
   } else {
 
-    const tenant_url = `https://${tenant_host}.${domain}`
-    const mtx_base   = `${tenant_url}/-/cds/synonymapi`
+    const mtx_url  = `https://${mtx_host}.${domain}`
+    const mtx_base = `${mtx_url}/-/cds/synonymapi`
 
-    let csrf_token
     let staticEntry  // static config entry for SRV from initial getConfig, null if none
 
     async function post(action, body = {}) {
@@ -54,8 +50,7 @@ if (!env) {
         method:  'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Cookie':        cookie,
-          'x-csrf-token':  csrf_token,
+          'Authorization': `Bearer ${mtx_token}`,
         },
         body: JSON.stringify(body),
       })
@@ -94,12 +89,12 @@ if (!env) {
 
 
     beforeAll(async () => {
-      // fetch CSRF token
-      const res = await fetch(`${tenant_url}/odata/v4/Travel`, {
-        headers: { 'Cookie': cookie, 'x-csrf-token': 'fetch' }
-      })
-      csrf_token = res.headers.get('x-csrf-token')
-      expect(csrf_token).toBeTruthy()
+      // // fetch CSRF token (not needed for direct mtx calls — CSRF is enforced by approuter, not srv)
+      // const res = await fetch(`${tenant_url}/odata/v4/Travel`, {
+      //   headers: { 'x-approuter-authorization': `Bearer ${token}`, 'x-csrf-token': 'fetch' }
+      // })
+      // csrf_token = res.headers.get('x-csrf-token')
+      // expect(csrf_token).toBeTruthy()
 
       // read initial config to discover static entries — drives assertions throughout the test
       const { status, body } = await post('getConfig', { tenant: tenant_id })
