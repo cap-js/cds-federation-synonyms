@@ -1,41 +1,38 @@
 # {{$dotenv ...}} references values in file ./.env
-# Expected format of .env file:
-# domain=blabla
-# tenant_id=blabla
-# tenant_host=blabla
-# mtx_host=blabla
-# cookie=blabla
+# authorization assumes that app touter v22 is in use (may also work with v21)
+# Run ./get-tokens.sh first to populate token= and mtx_token= in .env
 
 @domain={{$dotenv domain}}
-@tenant_id={{$dotenv tenant_id}}
+@tenant_id={{$dotenv tenant_id_2}}
+
+### Actually it doesn't matter which tenant_host is used. All requests are routed
+###  to the app router, and the actual tenant is obtained from the token.
 @tenant_host={{$dotenv tenant_host}}
 @mtx_host={{$dotenv mtx_host}}
+
+@srv_host={{$dotenv srv_host}}
 
 @tenant_url=https://{{tenant_host}}.{{domain}}
 @mtx_url=https://{{mtx_host}}.{{domain}}
 
+@token={{$dotenv token}}
+@mtx_token={{$dotenv mtx_token}}
 
-### Step 0
-#
-#   go to chrome, open developer tools, execute a GET request
-#   e.g. https://{{tenant_host}}.{{domain}}/odata/v4/Travel/Flights
 
-### Step 1 :copy the value of "Cookie" from the request headers to the .env file
-@cookie={{$dotenv cookie}}
-
-### Step 2: make a GET request to the same url, using the cookie and setting x-csrf-token to "fetch
+### Step 1: fetch CSRF token
+### only necessary for requests targetting app router and using session cookie
 # @name fetchCsrf
 GET {{tenant_url}}/odata/v4/Travel/Flights
-Cookie: {{cookie}}
+x-approuter-authorization: Bearer {{token}}
 x-csrf-token: fetch
 
-### Step 3 (auto): extract token from response
+### Step 2 (auto): extract CSRF token from response
 @csrf_token = {{fetchCsrf.response.headers.x-csrf-token}}
 
-### Step 4: Use the token and cookies in POST request
+### Step 3: test POST
 POST {{tenant_url}}/synonymapi/echo
 Content-Type: application/json
-Cookie: {{cookie}}
+x-approuter-authorization: Bearer {{token}}
 x-csrf-token: {{csrf_token}}
 
 {
@@ -48,26 +45,27 @@ x-csrf-token: {{csrf_token}}
 # reading/manipulating the config table - via app
 ###############################################################################
 
+# endpoint is not secured, but app router wants authentication -> token required
 
 ### directly read the config table
 GET {{tenant_url}}/readconf/Registry
-Cookie: {{cookie}}
+x-approuter-authorization: Bearer {{token}}
 
 ### read HANA sys view synonyms filtered by app schema
 GET {{tenant_url}}/readconf/Synonyms
-Cookie: {{cookie}}
+x-approuter-authorization: Bearer {{token}}
 
 ### read status view
 GET {{tenant_url}}/readconf/Status
-Cookie: {{cookie}}
+x-approuter-authorization: Bearer {{token}}
 
 
 ### write config table via OData service
 POST {{tenant_url}}/readconf/Registry
 Content-Type: application/json
 Accept: application/json
-Cookie: {{cookie}}
-x-csrf-token: {{csrf_token}}
+x-approuter-authorization: Bearer {{token}}
+#x-csrf-token: {{csrf_token}}
 
 {
   "srv": "sap.capire.flights.FlightsService_syn", "target": "xflights-db"
@@ -78,8 +76,8 @@ x-csrf-token: {{csrf_token}}
 ###
 POST {{tenant_url}}/synonymapi/echo
 Content-Type: application/json
-Cookie: {{cookie}}
-x-csrf-token: {{csrf_token}}
+x-approuter-authorization: Bearer {{token}}
+#x-csrf-token: {{csrf_token}}
 
 {
   "msg": "calling echo in app"
@@ -88,14 +86,14 @@ x-csrf-token: {{csrf_token}}
 ###
 POST {{tenant_url}}/synonymapi/getConfig
 Content-Type: application/json
-Cookie: {{cookie}}
-x-csrf-token: {{csrf_token}}
+x-approuter-authorization: Bearer {{token}}
+#x-csrf-token: {{csrf_token}}
 
 ###
 POST {{tenant_url}}/synonymapi/check
 Content-Type: application/json
-Cookie: {{cookie}}
-x-csrf-token: {{csrf_token}}
+x-approuter-authorization: Bearer {{token}}
+#x-csrf-token: {{csrf_token}}
 
 {
   "srv": "sap.capire.flights.FlightsService_syn"
@@ -104,8 +102,8 @@ x-csrf-token: {{csrf_token}}
 ###
 POST {{tenant_url}}/synonymapi/setDynamicConfig
 Content-Type: application/json
-Cookie: {{cookie}}
-x-csrf-token: {{csrf_token}}
+x-approuter-authorization: Bearer {{token}}
+#x-csrf-token: {{csrf_token}}
 
 {
   "srv": "sap.capire.flights.FlightsService_syn", "target": "xflights-db"
@@ -114,8 +112,8 @@ x-csrf-token: {{csrf_token}}
 ###
 POST {{tenant_url}}/synonymapi/deleteDynamicConfig
 Content-Type: application/json
-Cookie: {{cookie}}
-x-csrf-token: {{csrf_token}}
+x-approuter-authorization: Bearer {{token}}
+#x-csrf-token: {{csrf_token}}
 
 {
   "srv": "sap.capire.flights.FlightsService_syn"
@@ -127,46 +125,48 @@ x-csrf-token: {{csrf_token}}
 # reading/manipulating the config table - via mtx
 ###############################################################################
 
+# currently endpoint /-/cds/readconf is not secured
+# -> no token necessary
 
 ### directly read the config table
-GET {{tenant_url}}/-/cds/readconf/Registry(tenant='{{tenant_id}}')/Set
-Cookie: {{cookie}}
+GET {{mtx_url}}/-/cds/readconf/Registry(tenant='{{tenant_id}}')/Set
+#x-approuter-authorization: Bearer {{token}}
 
 ### read HANA sys view synonyms filtered by app schema
-GET {{tenant_url}}/-/cds/readconf/Synonyms(tenant='{{tenant_id}}')/Set
-Cookie: {{cookie}}
+GET {{mtx_url}}/-/cds/readconf/Synonyms(tenant='{{tenant_id}}')/Set
+#x-approuter-authorization: Bearer {{token}}
 
 ### read status view
-GET {{tenant_url}}/-/cds/readconf/Status(tenant='{{tenant_id}}')/Set
-Cookie: {{cookie}}
+GET {{mtx_url}}/-/cds/readconf/Status(tenant='{{tenant_id}}')/Set
+#x-approuter-authorization: Bearer {{token}}
 
 
 
 ###
-POST {{tenant_url}}/-/cds/synonymapi/echo
+POST {{mtx_url}}/-/cds/synonymapi/echo
 Content-Type: application/json
-Cookie: {{cookie}}
-x-csrf-token: {{csrf_token}}
+#x-approuter-authorization: Bearer {{token}}
+#x-csrf-token: {{csrf_token}}
 
 {
   "msg": "calling echo in mtx via tenant_url"
 }
 
 ###
-POST {{tenant_url}}/-/cds/synonymapi/getConfig
+POST {{mtx_url}}/-/cds/synonymapi/getConfig
 Content-Type: application/json
-Cookie: {{cookie}}
-x-csrf-token: {{csrf_token}}
+#x-approuter-authorization: Bearer {{token}}
+#x-csrf-token: {{csrf_token}}
 
 {
   "tenant": "{{tenant_id}}"
 }
 
 ###
-POST {{tenant_url}}/-/cds/synonymapi/check
+POST {{mtx_url}}/-/cds/synonymapi/check
 Content-Type: application/json
-Cookie: {{cookie}}
-x-csrf-token: {{csrf_token}}
+#x-approuter-authorization: Bearer {{token}}
+#x-csrf-token: {{csrf_token}}
 
 {
   "tenant": "{{tenant_id}}",
@@ -174,10 +174,10 @@ x-csrf-token: {{csrf_token}}
 }
 
 ###
-POST {{tenant_url}}/-/cds/synonymapi/setDynamicConfig
+POST {{mtx_url}}/-/cds/synonymapi/setDynamicConfig
 Content-Type: application/json
-Cookie: {{cookie}}
-x-csrf-token: {{csrf_token}}
+#x-approuter-authorization: Bearer {{token}}
+#x-csrf-token: {{csrf_token}}
 
 {
   "tenant": "{{tenant_id}}",
@@ -187,13 +187,47 @@ x-csrf-token: {{csrf_token}}
 }
 
 ###
-POST {{tenant_url}}/-/cds/synonymapi/deleteDynamicConfig
+POST {{mtx_url}}/-/cds/synonymapi/deleteDynamicConfig
 Content-Type: application/json
-Cookie: {{cookie}}
-x-csrf-token: {{csrf_token}}
+#x-approuter-authorization: Bearer {{token}}
+#x-csrf-token: {{csrf_token}}
 
 {
   "tenant": "{{tenant_id}}",
   "srv": "sap.capire.flights.FlightsService_syn",
   "triggerUpgrade": true
 }
+
+
+###############################################################################
+# mtx
+###############################################################################
+
+
+### Get app URL
+GET {{mtx_url}}/-/cds/saas-provisioning/getAppUrl
+Authorization: Bearer {{mtx_token}}
+
+
+### Get all metadata
+GET {{mtx_url}}/-/cds/saas-provisioning/tenant
+Authorization: Bearer {{mtx_token}}
+
+
+### upgrade * (async)
+# @name upgrade
+POST {{mtx_url}}/-/cds/saas-provisioning/upgrade
+Content-Type: application/json
+Authorization: Bearer {{mtx_token}}
+
+{
+    "tenants": ["*"]
+}
+
+### poll upgrade job status (copy job ID from upgrade response's location header)
+GET {{mtx_url}}/-/cds/jobs/pollJob(ID='{{upgrade.response.headers.x-job-id}}')
+Authorization: Bearer {{mtx_token}}
+
+
+
+
