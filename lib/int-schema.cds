@@ -3,8 +3,9 @@ namespace cds.dataproducts.synonyms;
 // these entities are part of MTX's model and the application's model
 
 entity Registry {
-  key srv : String(300);  // name of imported CDS API service
-  target : String(300);   // target container service for the synonyms
+  key srv                  : String(300);  // name of imported CDS API service
+  provider_service_manager : String(300);  // service manager of the provider system
+  provider_tenant          : String(300);  // tenant in the provider system
 }
 
 // the corresponding HANA object (synonym) is generated in the build plugin
