@@ -340,7 +340,7 @@ describe('PlugIntoMtx - before deploy handler', () => {
 
   it('shared gen/base out-dir is copied to a private temp dir before file removal', async () => {
     const srv = 'sap.capire.flights'
-    // no config → srv will be in srvsToRemove, triggering the copy
+    // no config → srv will be in unconnected_services, triggering the copy
 
     cds.services['cds.xt.ModelProviderService'] = {
       getCsn: async () => makeCsn([srv])

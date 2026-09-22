@@ -3,7 +3,6 @@
 # Run ./get-tokens.sh first to populate token= and mtx_token= in .env
 
 @domain={{$dotenv domain}}
-@tenant_id={{$dotenv tenant_id_2}}
 
 ### Actually it doesn't matter which tenant_host is used. All requests are routed
 ###  to the app router, and the actual tenant is obtained from the token.
@@ -128,6 +127,9 @@ x-approuter-authorization: Bearer {{token}}
 # currently endpoint /-/cds/readconf is not secured
 # -> no token necessary
 
+@tenant_id={{$dotenv tenant_id_2}}
+
+
 ### directly read the config table
 GET {{mtx_url}}/-/cds/readconf/Registry(tenant='{{tenant_id}}')/Set
 #x-approuter-authorization: Bearer {{token}}
@@ -182,7 +184,7 @@ Content-Type: application/json
 {
   "tenant": "{{tenant_id}}",
   "srv": "sap.capire.flights.FlightsService_syn",
-  "target": "xflights-db",
+  "provider_service_manager": "xflights-db",
   "triggerUpgrade": true
 }
 
