@@ -515,12 +515,7 @@ POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/getConfig
 }
 ```
 
-Read the complete config table:
-```http
-GET {{host_name}}.{{domain_name}}/readconf/Registry
-```
-
 Query a monitoring view to get status information on synonym level:
 ```http
-GET {{host_name}}.{{domain_name}}/readconf/Status
+GET {{host_name}}.{{domain_name}}/-/cds/synonymapi/Status(tenant='{{tenant_id}}')/Set
 ```

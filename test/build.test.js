@@ -89,12 +89,9 @@ describe('when building', () => {
       expect(files).to.be.an('array').that.is.empty
     })
 
-    it('should generate one hdbsynonym file for sys.synonyms', () => {
+    it('should not generate any hdbsynonym files', () => {
       const files = fs.readdirSync(OUT_SRC_DIR, ).filter(file => file.endsWith('.hdbsynonym'))
-      expect(files).to.be.an('array').with.lengthOf(1)
-
-      const filePath = path.join(OUT_SRC_DIR, `cds.dataproducts.synonyms.Synonyms.hdbsynonym`)
-      expect(fs.existsSync(filePath)).to.be.true
+      expect(files).to.be.an('array').that.is.empty
     })
   })
 
@@ -159,12 +156,9 @@ describe('when building', () => {
       expect(content2).to.deep.equal(refContent2)
     })
 
-    it('should generate one hdbsynonym file for sys.synonyms', () => {
+    it('should not generate any hdbsynonym files', () => {
       const files = fs.readdirSync(OUT_SRC_DIR, ).filter(file => file.endsWith('.hdbsynonym'))
-      expect(files).to.be.an('array').with.lengthOf(1)
-
-      const filePath = path.join(OUT_SRC_DIR, `cds.dataproducts.synonyms.Synonyms.hdbsynonym`)
-      expect(fs.existsSync(filePath)).to.be.true
+      expect(files).to.be.an('array').that.is.empty
     })
   })
 
@@ -350,12 +344,9 @@ describe('when building', () => {
       expect(content).to.deep.equal(refContent)
     })
 
-    it('should generate two hdbsynonym files - for imported service and for sys.synonyms', () => {
+    it('should generate one hdbsynonym file - for imported service', () => {
       const files = fs.readdirSync(OUT_SRC_DIR, ).filter(file => file.endsWith('.hdbsynonym'))
-      expect(files).to.be.an('array').with.lengthOf(2)
-      // --------------------------------------------------
-      const filePath1 = path.join(OUT_SRC_DIR, `cds.dataproducts.synonyms.Synonyms.hdbsynonym`)
-      expect(fs.existsSync(filePath1)).to.be.true
+      expect(files).to.be.an('array').with.lengthOf(1)
       // --------------------------------------------------
       const filePath2 = path.join(OUT_SRC_DIR, `${serviceName_im}.hdbsynonym`)
       expect(fs.existsSync(filePath2)).to.be.true
