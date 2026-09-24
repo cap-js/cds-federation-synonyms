@@ -2,6 +2,16 @@
 
 const cds = require('@sap/cds')
 const { expect } = cds.test.chai
+
+// buildStatusSql targets SYS.SYNONYMS which doesn't exist in SQLite — mock it to
+// return an empty result set so config-helper tests can focus on config logic
+jest.mock('../lib/status-sql', () => ({
+  buildStatusSql: jest.fn().mockResolvedValue(
+    `SELECT NULL AS SCHEMA_NAME, NULL AS SYNONYM_NAME, NULL AS OBJECT_SCHEMA,
+     NULL AS OBJECT_NAME, NULL AS STATUS, NULL AS IS_VALID, NULL AS CREATE_TIME WHERE 0`
+  )
+}))
+
 const { getResolvedConfig, checkService } = require('../lib/config-helper')
 
 // Boot in the project root so @cap-js/sqlite (nested under cds-dk) can be resolved
@@ -13,12 +23,6 @@ beforeAll(async () => {
   cds.model = m
   const db = await cds.connect.to('db')
   for (const stmt of cds.compile.to.sql(m)) await db.run(stmt)
-  // Status is @cds.persistence.exists (a HANA view), so CDS doesn't generate DDL for it — create manually
-  await db.run(`CREATE TABLE IF NOT EXISTS cds_dataproducts_synonyms_Status (
-    SCHEMA_NAME   TEXT, SYNONYM_NAME TEXT, OBJECT_SCHEMA TEXT,
-    OBJECT_NAME   TEXT, STATUS       TEXT, IS_VALID      TEXT, CREATE_TIME TEXT,
-    PRIMARY KEY (SCHEMA_NAME, SYNONYM_NAME)
-  )`)
 })
 
 afterAll(() => cds.disconnect())
