@@ -18,10 +18,14 @@ service Exposure {
 @requires: 'any'
 @path: '/-/cds/synonymapi'
 service ConfigService {
-  action echo     (msg: String)                                                         returns String;
-  action getConfig(tenant:String)                                                       returns String;
-  action check    (tenant:String, srv: String)                                          returns String;
-  // target: service manager name for the target container, null = explicitly unconnect (overrides static config)
-  action setDynamicConfig   (tenant:String, srv: String, target: String, triggerUpgrade: Boolean) returns String;
-  action deleteDynamicConfig(tenant:String, srv: String,                 triggerUpgrade: Boolean) returns String;
+  action echo     (msg: String)                          returns String;
+  action getConfig(tenant:String)                        returns String;
+  action check    (tenant:String, srv: String)           returns String;
+  // provider_service_manager / provider_tenant: identify the provider container
+  //   provider_tenant is optional
+  //   provider_service_manager = null -> explicitly unconnect (overrides static config)
+  action setDynamicConfig   (tenant:String, srv: String, provider_service_manager: String,
+                                                         provider_tenant: String,
+                                                         triggerUpgrade: Boolean) returns String;
+  action deleteDynamicConfig(tenant:String, srv: String, triggerUpgrade: Boolean) returns String;
 }
