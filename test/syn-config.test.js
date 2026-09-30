@@ -8,7 +8,6 @@
 
 const SRV                    = 'sap.capire.flights.FlightsService_syn'
 const PROVIDER_SERVICE_MANAGER = 'xflights-db'
-const PROVIDER_TENANT          = 'ca3ec06a-6c5f-49dd-adc8-bea309ec9c56' // tenant 2
 const TRIGGER_UPGRADE  = true
 const UPGRADE_TIMEOUT  = 300_000  // 5 minutes; only used when TRIGGER_UPGRADE is true
 
@@ -341,11 +340,11 @@ if (!env) {
       })
 
       it('setDynamicConfig (2)', async () => {
-        const result = await setDynamicConfig(PROVIDER_SERVICE_MANAGER, PROVIDER_TENANT)
+        const result = await setDynamicConfig(PROVIDER_SERVICE_MANAGER, tenant_id)
         console.log('setDynamicConfig (2):', result)
         expect(result).toMatch(SRV)
         expect(result).toMatch(PROVIDER_SERVICE_MANAGER)
-        expect(result).toMatch(PROVIDER_TENANT)
+        expect(result).toMatch(tenant_id)
       }, TRIGGER_UPGRADE ? UPGRADE_TIMEOUT : undefined)
 
       it('getConfig (2) - after setDynamicConfig', async () => {
@@ -354,14 +353,14 @@ if (!env) {
         const entry = config.find(e => e.srv === SRV && e.config_origin.startsWith('dynamic'))
         expect(entry).toBeDefined()
         expect(entry.provider_service_manager).toBe(PROVIDER_SERVICE_MANAGER)
-        expect(entry.provider_tenant).toBe(PROVIDER_TENANT)
+        expect(entry.provider_tenant).toBe(tenant_id)
         console.log('getConfig (2):', JSON.stringify(config, null, 2))
       })
 
       it('check (2) - after setDynamicConfig', async () => {
         const result = await check()
         console.log('check (2):', result)
-      expect(result['dynamic-config']).toBe(PROVIDER_SERVICE_MANAGER + ' / ' + PROVIDER_TENANT + (staticEntry ? ' (overrides static)' : ''))
+      expect(result['dynamic-config']).toBe(PROVIDER_SERVICE_MANAGER + ' / ' + tenant_id + (staticEntry ? ' (overrides static)' : ''))
         if (TRIGGER_UPGRADE) {
           const { nConnected, nUnconnected } = parseSynonyms(result.synonyms)
           expect(nConnected).toBeGreaterThan(0)
@@ -370,11 +369,11 @@ if (!env) {
       })
 
       it('setDynamicConfig (3) - idempotent', async () => {
-        const result = await setDynamicConfig(PROVIDER_SERVICE_MANAGER, PROVIDER_TENANT)
+        const result = await setDynamicConfig(PROVIDER_SERVICE_MANAGER, tenant_id)
         console.log('setDynamicConfig (3):', result)
         expect(result).toMatch(SRV)
         expect(result).toMatch(PROVIDER_SERVICE_MANAGER)
-        expect(result).toMatch(PROVIDER_TENANT)
+        expect(result).toMatch(tenant_id)
       }, TRIGGER_UPGRADE ? UPGRADE_TIMEOUT : undefined)
 
       it('getConfig (3) - after setDynamicConfig (idempotent)', async () => {
@@ -388,7 +387,7 @@ if (!env) {
       it('check (3) - after setDynamicConfig (idempotent)', async () => {
         const result = await check()
         console.log('check (3):', result)
-      expect(result['dynamic-config']).toBe(PROVIDER_SERVICE_MANAGER + ' / ' + PROVIDER_TENANT + (staticEntry ? ' (overrides static)' : ''))
+      expect(result['dynamic-config']).toBe(PROVIDER_SERVICE_MANAGER + ' / ' + tenant_id + (staticEntry ? ' (overrides static)' : ''))
         if (TRIGGER_UPGRADE) {
           const { nConnected, nUnconnected } = parseSynonyms(result.synonyms)
           expect(nConnected).toBeGreaterThan(0)
