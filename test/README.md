@@ -15,6 +15,6 @@ and add the necessary information.
 ## Auth
 
 * `cf login` (using `--sso` or user/pw)
-* bash get-tokens.sh
+* `bash get-tokens.sh`
   - writes `token` and `mtx_token` to _.env_
 

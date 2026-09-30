@@ -1,18 +1,6 @@
-using { cds.dataproducts.synonyms as internal } from './int-schema';
+using from './int-schema';  // ensure that int-schema.cds is included in the model
 
-// these services are part of the application's model
-
-@requires: 'any'
-@path: '/readconf'
-service Exposure {
-
-  entity Registry as projection on internal.Registry;
-  @readonly
-  entity Synonyms as projection on internal.Synonyms where SCHEMA_NAME = current_schema();
-  @readonly
-  entity Status   as projection on internal.Status;
-}
-
+// this service is part of the application's model
 
 @rest
 @requires: 'any'
@@ -20,7 +8,6 @@ service Exposure {
 service ConfigService {
   action echo     (msg: String)                          returns String;
   action getConfig()                                     returns String;
-  action check    (srv: String)                          returns String;
   // provider_service_manager / provider_tenant: identify the provider container
   //   provider_tenant is optional
   //   provider_service_manager = null -> explicitly unconnect (overrides static config)
@@ -28,4 +15,16 @@ service ConfigService {
                                           provider_tenant: String,
                                           triggerUpgrade: Boolean) returns String;
   action deleteDynamicConfig(srv: String, triggerUpgrade: Boolean) returns String;
+  action check    (srv: String)                          returns String;
+
+  @readonly @cds.persistence.skip
+  entity Status {
+    key SCHEMA_NAME  : String(256);
+    key SYNONYM_NAME : String(256);
+    OBJECT_SCHEMA    : String(256);
+    OBJECT_NAME      : String(256);
+    STATUS           : String(256);
+    IS_VALID         : String(5);
+    CREATE_TIME      : Timestamp;
+  }
 }

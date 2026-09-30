@@ -46,31 +46,9 @@ x-csrf-token: {{csrf_token}}
 
 # endpoint is not secured, but app router wants authentication -> token required
 
-### directly read the config table
-GET {{tenant_url}}/readconf/Registry
+### read status
+GET {{tenant_url}}/synonymapi/Status
 x-approuter-authorization: Bearer {{token}}
-
-### read HANA sys view synonyms filtered by app schema
-GET {{tenant_url}}/readconf/Synonyms
-x-approuter-authorization: Bearer {{token}}
-
-### read status view
-GET {{tenant_url}}/readconf/Status
-x-approuter-authorization: Bearer {{token}}
-
-
-### write config table via OData service
-POST {{tenant_url}}/readconf/Registry
-Content-Type: application/json
-Accept: application/json
-x-approuter-authorization: Bearer {{token}}
-#x-csrf-token: {{csrf_token}}
-
-{
-  "srv": "sap.capire.flights.FlightsService_syn", "target": "xflights-db"
-}
-
-
 
 ###
 POST {{tenant_url}}/synonymapi/echo
@@ -129,20 +107,9 @@ x-approuter-authorization: Bearer {{token}}
 
 @tenant_id={{$dotenv tenant_id_2}}
 
-
-### directly read the config table
-GET {{mtx_url}}/-/cds/readconf/Registry(tenant='{{tenant_id}}')/Set
+### read status
+GET {{mtx_url}}/-/cds/synonymapi/Status(tenant='{{tenant_id}}')/Set
 #x-approuter-authorization: Bearer {{token}}
-
-### read HANA sys view synonyms filtered by app schema
-GET {{mtx_url}}/-/cds/readconf/Synonyms(tenant='{{tenant_id}}')/Set
-#x-approuter-authorization: Bearer {{token}}
-
-### read status view
-GET {{mtx_url}}/-/cds/readconf/Status(tenant='{{tenant_id}}')/Set
-#x-approuter-authorization: Bearer {{token}}
-
-
 
 ###
 POST {{mtx_url}}/-/cds/synonymapi/echo
@@ -229,7 +196,3 @@ Authorization: Bearer {{mtx_token}}
 ### poll upgrade job status (copy job ID from upgrade response's location header)
 GET {{mtx_url}}/-/cds/jobs/pollJob(ID='{{upgrade.response.headers.x-job-id}}')
 Authorization: Bearer {{mtx_token}}
-
-
-
-
