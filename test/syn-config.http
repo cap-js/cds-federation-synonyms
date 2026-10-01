@@ -9,8 +9,6 @@
 @tenant_host={{$dotenv tenant_host}}
 @mtx_host={{$dotenv mtx_host}}
 
-@srv_host={{$dotenv srv_host}}
-
 @tenant_url=https://{{tenant_host}}.{{domain}}
 @mtx_url=https://{{mtx_host}}.{{domain}}
 
@@ -18,33 +16,15 @@
 @mtx_token={{$dotenv mtx_token}}
 
 
-### Step 1: fetch CSRF token
-### only necessary for requests targetting app router and using session cookie
-# @name fetchCsrf
+### 
 GET {{tenant_url}}/odata/v4/Travel/Flights
 x-approuter-authorization: Bearer {{token}}
 x-csrf-token: fetch
-
-### Step 2 (auto): extract CSRF token from response
-@csrf_token = {{fetchCsrf.response.headers.x-csrf-token}}
-
-### Step 3: test POST
-POST {{tenant_url}}/synonymapi/echo
-Content-Type: application/json
-x-approuter-authorization: Bearer {{token}}
-x-csrf-token: {{csrf_token}}
-
-{
-  "msg": "calling echo ..."
-}
-
 
 
 ###############################################################################
 # reading/manipulating the config table - via app
 ###############################################################################
-
-# endpoint is not secured, but app router wants authentication -> token required
 
 ### read status
 GET {{tenant_url}}/synonymapi/Status
@@ -54,7 +34,6 @@ x-approuter-authorization: Bearer {{token}}
 POST {{tenant_url}}/synonymapi/echo
 Content-Type: application/json
 x-approuter-authorization: Bearer {{token}}
-#x-csrf-token: {{csrf_token}}
 
 {
   "msg": "calling echo in app"
@@ -64,13 +43,11 @@ x-approuter-authorization: Bearer {{token}}
 POST {{tenant_url}}/synonymapi/getConfig
 Content-Type: application/json
 x-approuter-authorization: Bearer {{token}}
-#x-csrf-token: {{csrf_token}}
 
 ###
 POST {{tenant_url}}/synonymapi/check
 Content-Type: application/json
 x-approuter-authorization: Bearer {{token}}
-#x-csrf-token: {{csrf_token}}
 
 {
   "srv": "sap.capire.flights.FlightsService_syn"
@@ -80,42 +57,36 @@ x-approuter-authorization: Bearer {{token}}
 POST {{tenant_url}}/synonymapi/setDynamicConfig
 Content-Type: application/json
 x-approuter-authorization: Bearer {{token}}
-#x-csrf-token: {{csrf_token}}
 
 {
-  "srv": "sap.capire.flights.FlightsService_syn", "target": "xflights-db"
+  "srv": "sap.capire.flights.FlightsService_syn",
+  "provider_service_manager": "xflights-db"
 }
 
 ###
 POST {{tenant_url}}/synonymapi/deleteDynamicConfig
 Content-Type: application/json
 x-approuter-authorization: Bearer {{token}}
-#x-csrf-token: {{csrf_token}}
 
 {
   "srv": "sap.capire.flights.FlightsService_syn"
 }
 
 
-
 ###############################################################################
 # reading/manipulating the config table - via mtx
 ###############################################################################
 
-# currently endpoint /-/cds/readconf is not secured
-# -> no token necessary
-
-@tenant_id={{$dotenv tenant_id_2}}
+@tenant_id={{$dotenv tenant_id}}
 
 ### read status
 GET {{mtx_url}}/-/cds/synonymapi/Status(tenant='{{tenant_id}}')/Set
-#x-approuter-authorization: Bearer {{token}}
+Authorization: Bearer {{mtx_token}}
 
 ###
 POST {{mtx_url}}/-/cds/synonymapi/echo
 Content-Type: application/json
-#x-approuter-authorization: Bearer {{token}}
-#x-csrf-token: {{csrf_token}}
+Authorization: Bearer {{mtx_token}}
 
 {
   "msg": "calling echo in mtx via tenant_url"
@@ -124,8 +95,7 @@ Content-Type: application/json
 ###
 POST {{mtx_url}}/-/cds/synonymapi/getConfig
 Content-Type: application/json
-#x-approuter-authorization: Bearer {{token}}
-#x-csrf-token: {{csrf_token}}
+Authorization: Bearer {{mtx_token}}
 
 {
   "tenant": "{{tenant_id}}"
@@ -134,8 +104,7 @@ Content-Type: application/json
 ###
 POST {{mtx_url}}/-/cds/synonymapi/check
 Content-Type: application/json
-#x-approuter-authorization: Bearer {{token}}
-#x-csrf-token: {{csrf_token}}
+Authorization: Bearer {{mtx_token}}
 
 {
   "tenant": "{{tenant_id}}",
@@ -145,8 +114,7 @@ Content-Type: application/json
 ###
 POST {{mtx_url}}/-/cds/synonymapi/setDynamicConfig
 Content-Type: application/json
-#x-approuter-authorization: Bearer {{token}}
-#x-csrf-token: {{csrf_token}}
+Authorization: Bearer {{mtx_token}}
 
 {
   "tenant": "{{tenant_id}}",
@@ -158,8 +126,7 @@ Content-Type: application/json
 ###
 POST {{mtx_url}}/-/cds/synonymapi/deleteDynamicConfig
 Content-Type: application/json
-#x-approuter-authorization: Bearer {{token}}
-#x-csrf-token: {{csrf_token}}
+Authorization: Bearer {{mtx_token}}
 
 {
   "tenant": "{{tenant_id}}",
@@ -172,16 +139,13 @@ Content-Type: application/json
 # mtx
 ###############################################################################
 
-
 ### Get app URL
 GET {{mtx_url}}/-/cds/saas-provisioning/getAppUrl
 Authorization: Bearer {{mtx_token}}
 
-
 ### Get all metadata
 GET {{mtx_url}}/-/cds/saas-provisioning/tenant
 Authorization: Bearer {{mtx_token}}
-
 
 ### upgrade * (async)
 # @name upgrade
