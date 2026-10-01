@@ -3,7 +3,7 @@ using from './int-schema';  // ensure that int-schema.cds is included in the mod
 // this service is part of MTX sidecar's model
 
 @rest
-@requires: ['internal-user', 'cds.Developer']
+@requires: ['internal-user']
 @path: '/-/cds/synonymapi'
 service ConfigService {
   action echo     (msg: String)                          returns String;
