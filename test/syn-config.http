@@ -77,7 +77,7 @@ x-approuter-authorization: Bearer {{token}}
 # reading/manipulating the config table - via mtx
 ###############################################################################
 
-@tenant_id={{$dotenv tenant_id_4}}
+@tenant_id={{$dotenv tenant_id}}
 
 ### read status
 GET {{mtx_url}}/-/cds/synonymapi/Status(tenant='{{tenant_id}}')/Set
