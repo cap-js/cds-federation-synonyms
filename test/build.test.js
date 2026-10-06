@@ -61,7 +61,7 @@ describe('when building', () => {
 
     it('should report that plugin code is running in cds build', () => {
       const pluginLogs = BUILD_LOGS.filter(line => line.startsWith('[cds-federation-synonyms]'))
-      expect(pluginLogs.some(line => line.match(/######### hana build plugin start #########/i))).to.be.true
+      expect(pluginLogs.some(line => line.match(/===== hook compile.to.hana start =====/i))).to.be.true
     })
 
     it('should report that no imported data services were found', () => {
