@@ -3,7 +3,7 @@ using from './int-schema';  // ensure that int-schema.cds is included in the mod
 // this service is part of the application's model
 
 @rest
-@requires: 'any'
+@requires: 'cds.Developer'
 @path: '/synonymapi'
 service ConfigService {
   action echo     (msg: String)                          returns String;
