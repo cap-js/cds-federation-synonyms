@@ -1,0 +1,15 @@
+.DS_Store
+*.sqlite
+_out
+gen
+node_modules
+# .env
+.cf
+*.mtar
+*.mtaext
+dist
+
+# added by cds
+.cdsrc-private.json
+*.log
+*.mta

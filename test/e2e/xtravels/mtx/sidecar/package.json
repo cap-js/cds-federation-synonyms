@@ -1,0 +1,36 @@
+{
+  "name": "xtravels-mtx",
+  "dependencies": {
+    "@cap-js/cds-federation-synonyms": "file:../../../cap-js-cds-federation-synonyms-0.0.1.tgz",
+    "@cap-js/hana": "^3",
+    "@sap/cds": "^10",
+    "@sap/cds-mtxs": "^4",
+    "@sap/xssec": "^4"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^3"
+  },
+  "engines": {
+    "node": "^24"
+  },
+  "scripts": {
+    "start": "cds-serve"
+  },
+  "cds": {
+    "profile": "mtx-sidecar",
+    "requires": {
+      "db": {
+        "kind": "hana",
+        "vcap": {
+          "name": "xtravels-db"
+        }
+      },
+      "xflights-db": {
+        "kind": "hana",
+        "vcap": {
+          "name": "xflights-db"
+        }
+      }
+    }
+  }
+}
