@@ -6,7 +6,6 @@ using from './int-schema';  // ensure that int-schema.cds is included in the mod
 @requires: ['internal-user']
 @path: '/-/cds/synonymapi'
 service ConfigService {
-  action echo     (msg: String)                          returns String;
   action getConfig(tenant:String)                        returns String;
   // provider_service_manager / provider_tenant: identify the provider container
   //   provider_tenant is optional
