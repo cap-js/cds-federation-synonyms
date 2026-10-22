@@ -31,15 +31,6 @@ GET {{tenant_url}}/synonymapi/Status
 x-approuter-authorization: Bearer {{token}}
 
 ###
-POST {{tenant_url}}/synonymapi/echo
-Content-Type: application/json
-x-approuter-authorization: Bearer {{token}}
-
-{
-  "msg": "calling echo in app"
-}
-
-###
 POST {{tenant_url}}/synonymapi/getConfig
 Content-Type: application/json
 x-approuter-authorization: Bearer {{token}}
@@ -82,15 +73,6 @@ x-approuter-authorization: Bearer {{token}}
 ### read status
 GET {{mtx_url}}/-/cds/synonymapi/Status(tenant='{{tenant_id}}')/Set
 Authorization: Bearer {{mtx_token}}
-
-###
-POST {{mtx_url}}/-/cds/synonymapi/echo
-Content-Type: application/json
-Authorization: Bearer {{mtx_token}}
-
-{
-  "msg": "calling echo in mtx via tenant_url"
-}
 
 ###
 POST {{mtx_url}}/-/cds/synonymapi/getConfig
