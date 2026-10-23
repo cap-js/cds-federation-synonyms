@@ -32,7 +32,7 @@ entity Bookings {
         Currency : Currency;
       };
       BookingDate : Date default $now;
-      Status      : Association to BookingStatus default 'O';
+      Status      : Association to BookingStatus default 'N';
 }
 
 
