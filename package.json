@@ -20,7 +20,7 @@
     "cds-plugin.js"
   ],
   "workspaces": [
-    "test"
+    "test/scenarios"
   ],
   "devDependencies": {
     "@cap-js/cds-federation-synonyms": "file:.",

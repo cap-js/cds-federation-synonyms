@@ -16,7 +16,7 @@
 @mtx_token={{$dotenv mtx_token}}
 
 
-### 
+###
 GET {{tenant_url}}/odata/v4/Travel/Flights
 x-approuter-authorization: Bearer {{token}}
 x-csrf-token: fetch

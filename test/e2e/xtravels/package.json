@@ -1,0 +1,33 @@
+{
+  "name": "@capire/xtravels",
+  "version": "1.0.1",
+  "description": "CAP sample for travels app",
+  "scripts": {
+    "start": "cds-serve"
+  },
+  "dependencies": {
+    "@capire/xflights-data-syn": "file:../apis/capire-xflights-data-syn-0.1.3.tgz",
+    "@cap-js/cds-federation-synonyms": "file:../cap-js-cds-federation-synonyms-0.0.1.tgz",
+    "@cap-js/hana": "^3",
+    "@sap/cds": "^10",
+    "@sap/cds-mtxs": "^4",
+    "@sap/xssec": "^4"
+  },
+  "devDependencies": {
+    "@cap-js/sqlite": "^3",
+    "@sap/cds-dk": "^10"
+  },
+  "cds": {
+    "requires": {
+      "[production]": {
+        "auth": "xsuaa",
+        "multitenancy": true
+      },
+      "[with-mtx]": {
+        "multitenancy": true
+      }
+    },
+    "profile": "with-mtx-sidecar"
+  },
+  "license": "Apache-2.0"
+}
