@@ -2,5 +2,7 @@
 node_modules/
 gen/
 
+test/e2e/**/package-lock.json
+
 test/.env
 test/e2e/cap-js-cds-federation-synonyms-*.tgz
