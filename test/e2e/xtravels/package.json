@@ -6,7 +6,6 @@
     "start": "cds-serve"
   },
   "dependencies": {
-    "@capire/common": "^2.0.0",
     "@capire/xflights-data-syn": "file:../apis/capire-xflights-data-syn-0.1.3.tgz",
     "@cap-js/cds-federation-synonyms": "file:../cap-js-cds-federation-synonyms-0.0.1.tgz",
     "@cap-js/hana": "^3",
