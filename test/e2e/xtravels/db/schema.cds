@@ -62,9 +62,9 @@ entity TravelStatus : sap.common.CodeList {
 
 entity BookingStatus : sap.common.CodeList {
   key code : String(1) enum {
-    Open      = 'O';
-    Confirmed = 'C';
-    Failed    = 'F';
+    New      = 'N';
+    Booked   = 'B';
+    Rejected = 'X';
   }
 }
 
