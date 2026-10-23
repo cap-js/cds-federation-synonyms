@@ -1,0 +1,24 @@
+{
+  "scopes": [
+    {
+      "name": "$XSAPPNAME.mtcallback",
+      "description": "Subscription via SaaS Registry",
+      "grant-as-authority-to-apps": [
+        "$XSAPPNAME(application,sap-provisioning,tenant-onboarding)"
+      ]
+    },
+    {
+      "name": "$XSAPPNAME.cds.Developer",
+      "description": "Access to data federation admin APIs"
+    }
+  ],
+  "attributes": [],
+  "role-templates": [
+    {
+      "name": "DataFederationAdmin",
+      "description": "Administer data federation synonym configuration",
+      "scope-references": ["$XSAPPNAME.cds.Developer"]
+    }
+  ],
+  "authorities-inheritance": false
+}
