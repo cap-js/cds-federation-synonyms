@@ -102,8 +102,7 @@ They represent the final state of the [walkthrough](../../doc/walkthrough.md), i
 a data service for synonyms, and xtravels already consumes it. The apps are ready to be deployed as
 multi-tenant apps to CF. For both apps, run
 ```sh
-mbt build
-cf deploy mta_archives/...
+bash x_build-and-deploy.sh
 ```
 
 The apps can also be adapted for single-tenant deployments.
