@@ -8,7 +8,7 @@ build-parameters:
   before-all:
     - builder: custom
       commands:
-        - npm ci
+        - npm install
         - npx cds build --production --ws-pack
 
 modules:
@@ -19,7 +19,7 @@ modules:
       instances: 1
       buildpack: nodejs_buildpack
     build-parameters:
-      builder: npm-ci
+      builder: npm
     provides:
       - name: srv-api # required by consumers of CAP services (e.g. approuter)
         properties:
@@ -67,7 +67,7 @@ modules:
         properties:
           SUBSCRIPTION_URL: ~{app-protocol}://\${tenant_subdomain}-~{app-uri}
     build-parameters:
-      builder: npm-ci
+      builder: npm
     parameters:
       instances: 1
       memory: 256M
