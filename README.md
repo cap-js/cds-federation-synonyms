@@ -26,6 +26,10 @@ to learn about the basics.
 * Both "provider" and "consumer" are CAP apps, using SAP HANA as database.
 * Both "provider" and "consumer" run in the same SAP HANA instance, and,
   if Native Multitenancy in SAP HANA Cloud is switched on, live in the same tenant.
+* "Provider" and "consumer" must be deployed within the same trust boundary (the same
+  SAP BTP subaccount, or an organizational boundary with equivalent security controls and
+  mutual trust). See [Security considerations](#security-considerations) for why this is
+  required. Deploying them across different trust boundaries is **not supported**.
 
 The plugin uses two components which are under SAP properity licesenses. You need to review and accept them if you consume the plugin:
 * [@sap/hdi](https://www.npmjs.com/package/@sap/hdi)
@@ -59,8 +63,8 @@ local mock tables (synonyms are "unconnected"), or to the respective tables/view
 The choice between connected and unconnected is made on service level.
 For a single tenant app, it is a deployment decision. For the tenants of a multi tenant app,
 you can use a static configuration or the synonyms can alternatively also be switched
-between connected and unconnected during runtime via an
-[API](./doc/config-service-api.md) provided by the plugin.
+between connected and unconnected during runtime via the MTX sidecar API
+(`/-/cds/synonymapi`) provided by the plugin.
 
 ### Schematic example
 
@@ -110,6 +114,35 @@ For a detailed example, go to [Walkthrough](./doc/walkthrough.md).
 
 
 
+
+## Security considerations
+
+### Provider and consumer share a trust boundary
+
+Connecting synonyms requires the consumer application - specifically its MTX sidecar for
+multi-tenant consumers - to hold a binding to the provider's SAP Service Manager
+instance. This is configured as the `service-manager` property of a `cds.env.requires` entry
+(see [Consumer](#consumer) and the [Walkthrough](./doc/walkthrough.md)). On each HANA deployment,
+the plugin uses this binding to fetch the credentials of
+the provider's HDI container and establish the synonym trust.
+
+An SAP Service Manager binding is not scoped to an individual HDI container: it grants
+credentials for *every* HDI container managed by that Service Manager instance (Service
+Manager provides no per-container restriction). The consumer's binding therefore puts
+credentials for all of the provider's containers - not only the one used for the
+federation - into the consumer's runtime environment (its `VCAP_SERVICES`). Any party able to
+read that environment - for example through a compromised consumer application instance or
+operator-level access to the consumer app - can extract all of them.
+
+Because the consumer effectively holds keys to the provider's entire Service Manager, the
+provider must fully trust the consumer. Provider and consumer must therefore be deployed
+within the same trust boundary - the same SAP BTP subaccount, or an organizational boundary
+with equivalent security controls and mutual trust.
+
+Deploying provider and consumer across different trust boundaries - for example different
+customers, or different SAP BTP global accounts - is **not supported** and constitutes a
+security risk, because it exposes the provider's container credentials to a party outside its
+trust boundary.
 
 ## Support, Feedback, Contributing
 

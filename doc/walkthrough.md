@@ -400,6 +400,10 @@ or dynamically after the deployment. Dynamic binding is necessary when you can't
 deployment order of your apps. Then it can happen that xtravels is deployed before xflights,
 which fails, if xflights-db is required in the _mta.yaml_ of xtravels.
 
+> **Note:** binding xtravels(-mtx) to the xflights Service Manager grants access to *all* HDI
+> containers under that Service Manager, so both apps must be deployed within the same trust
+> boundary. See [Security considerations](../README.md#security-considerations).
+
 * Static binding: In _mta.yaml_, ...
   * Add a resource entry for xflights-db:
       ```yaml
@@ -466,16 +470,20 @@ You should see the data fed into the local mock tables via the _csv_ files of th
 
 
 To switch the synonyms, i.e. connect/disconnect the imported service `sap.capire.flights.FlightsService_syn` to/from
-the `xflights-db` HDI container, use the [ConfigService API](./config-service-api.md) in xtravels-mtx.
+the `xflights-db` HDI container, use the MTX sidecar `synonymapi` (see the requests below) in xtravels-mtx.
+
+Note: The requests shown here are lacking authorization details. See [the test README](../test/README.md) for
+more info on tokens and [complete example requests](../test/syn-config.http).
+
 
 Set dynamic config (connect the synonyms):
 ```http
-POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/setDynamicConfig
+POST {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/setDynamicConfig
 
 {
   "tenant": "{{tenant_id}}",
   "srv": "sap.capire.flights.FlightsService_syn",
-  "target": "xflights-db",
+  "provider_service_manager": "xflights-db",
   "triggerUpgrade": true
 }
 ```
@@ -484,7 +492,7 @@ Query Flights again, you should now see the data coming directly from the xfligh
 
 Delete dynamic config (disconnect the synonyms):
 ```http
-POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/deleteDynamicConfig
+POST {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/deleteDynamicConfig
 
 {
   "tenant": "{{tenant_id}}",
@@ -498,7 +506,7 @@ POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/deleteDynamicConfig
 
 Check the connection status for service `sap.capire.flights.FlightsService_syn`:
 ```http
-POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/check
+POST {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/check
 
 {
   "tenant": "{{tenant_id}}",
@@ -508,7 +516,7 @@ POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/check
 
 Read the complete config table:
 ```http
-POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/getConfig
+POST {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/getConfig
 
 {
   "tenant": "{{tenant_id}}"
@@ -517,5 +525,5 @@ POST {{host_name}}.{{domain_name}}/-/cds/synonymapi/getConfig
 
 Query a monitoring view to get status information on synonym level:
 ```http
-GET {{host_name}}.{{domain_name}}/-/cds/synonymapi/Status(tenant='{{tenant_id}}')/Set
+GET {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/Status(tenant='{{tenant_id}}')/Set
 ```
