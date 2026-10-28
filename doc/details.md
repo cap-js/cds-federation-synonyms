@@ -209,19 +209,6 @@ Deployment and tenant subscription are not different from any other CAP applicat
 The synonyms for an imported service are initially deployed in "unconnected" state.
 
 Once tenant subscription has happened for a provider and consumer, the synonyms can
-be connected via the MTX sidecar API provided by the plugin.
-Connect the imported service with the provider's service manager via
-```http
-POST {{mtx_server}}/-/cds/synonymapi/setDynamicConfig
-
-{
-  "tenant": "<tenant-id>",
-  "srv": "datasrv",
-  "provider_service_manager": "provider-db",
-  "triggerUpgrade": true
-}
-```
+be connected via the MTX sidecar API provided by the plugin. See [walkthrough](walkthrough.md).
 After calling the API, a tenant update must be explicitly triggered (or requested
 inline via `triggerUpgrade`).
-
-

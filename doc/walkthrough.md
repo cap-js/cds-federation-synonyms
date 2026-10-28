@@ -468,6 +468,10 @@ You should see the data fed into the local mock tables via the _csv_ files of th
 To switch the synonyms, i.e. connect/disconnect the imported service `sap.capire.flights.FlightsService_syn` to/from
 the `xflights-db` HDI container, use the MTX sidecar `synonymapi` (see the requests below) in xtravels-mtx.
 
+Note: The requests shown here are lacking authorization details. See [the test README](../test/README.md) for
+more info on tokens and [complete example requests](../test/syn-config.http).
+
+
 Set dynamic config (connect the synonyms):
 ```http
 POST {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/setDynamicConfig

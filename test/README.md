@@ -182,7 +182,7 @@ A JWT that represents the **operator** (the SaaS app itself), with no user ident
 Issued by the operator XSUAA via OAuth2 **client credentials grant**.
 CAP treats this token as `internal-user`, granting access to privileged MTX sidecar
 endpoints (synonymapi, tenant upgrade, etc.).
-Does **not** carry `cds.Developer` or any subscriber tenant context.
+Does **not** carry any subscriber tenant context.
 
 Used for direct calls to the MTX sidecar (`Authorization: Bearer` header).
 
