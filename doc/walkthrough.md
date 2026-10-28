@@ -400,6 +400,10 @@ or dynamically after the deployment. Dynamic binding is necessary when you can't
 deployment order of your apps. Then it can happen that xtravels is deployed before xflights,
 which fails, if xflights-db is required in the _mta.yaml_ of xtravels.
 
+> **Note:** binding xtravels(-mtx) to the xflights Service Manager grants access to *all* HDI
+> containers under that Service Manager, so both apps must be deployed within the same trust
+> boundary. See [Security considerations](../README.md#security-considerations).
+
 * Static binding: In _mta.yaml_, ...
   * Add a resource entry for xflights-db:
       ```yaml
