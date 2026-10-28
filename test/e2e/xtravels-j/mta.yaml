@@ -5,7 +5,7 @@ description: "CAP XTravels sample application (java)"
 parameters:
   enable-parallel-deployments: true
 modules:
-  - name: xtravels-j-srv
+  - name: xtravels-srv
     type: java
     path: srv
     parameters:
@@ -26,17 +26,17 @@ modules:
         properties:
           srv-url: ${default-url}
     requires:
-      - name: xtravels-j-auth
-      - name: xtravels-j-db
+      - name: xtravels-auth
+      - name: xtravels-db
       - name: mtx-api
         properties:
           CDS_MULTITENANCY_SIDECAR_URL: ~{mtx-url}
-      - name: xtravels-j-registry
+      - name: xtravels-registry
       - name: app-api
         properties:
           CDS_MULTITENANCY_APPUI_URL: ~{url}
 
-  - name: xtravels-j
+  - name: xtravels
     type: approuter.nodejs
     path: app/router
     parameters:
@@ -50,7 +50,7 @@ modules:
           name: srv-api # must be used in xs-app.json as well
           url: ~{srv-url}
           forwardAuthToken: true
-      - name: xtravels-j-auth
+      - name: xtravels-auth
       - name: mtx-api
         group: destinations
         properties:
@@ -65,20 +65,24 @@ modules:
     properties:
       TENANT_HOST_PATTERN: "^(.*)-${default-uri}"
 
-  - name: xtravels-j-mtx
+  - name: xtravels-mtx
     type: nodejs
     path: mtx/sidecar
     requires:
-      - name: xtravels-j-auth
-      - name: xtravels-j-db
+      - name: xtravels-auth
+      - name: xtravels-db
       - name: xflights-db        # <----
     build-parameters:
       builder: custom
       build-result: gen
       commands:
+        # cds build copies mtx/sidecar/package.json verbatim into gen/, where the plugin's
+        # `file:../../../...tgz` path is one directory too shallow. Copy the tarball to the
+        # app root so the path resolves from the generated gen/ directory.
+        - cp ../../../cap-js-cds-federation-synonyms-0.0.1.tgz ../..
         - npm run build
       requires:
-        - name: xtravels-j-srv
+        - name: xtravels-srv
     properties:
       DEBUG: cds-federation-synonyms
     parameters:
@@ -91,18 +95,18 @@ modules:
           mtx-url: ${default-url}
 
 resources:
-  - name: xtravels-j-auth
+  - name: xtravels-auth
     type: org.cloudfoundry.managed-service
     parameters:
       service: xsuaa
       service-plan: application
       path: ./xs-security.json
       config:
-        xsappname: xtravels-j-${org}-${space}
+        xsappname: xtravels-${org}-${space}
         tenant-mode: shared
         role-collections:
-          - name: 'xtravels-j-developer-${space}'
-            description: Develop xtravels-j
+          - name: 'xtravels-developer-${space}'
+            description: Develop xtravels
             role-template-references:
               - $XSAPPNAME.DataFederationAdmin
         oauth2-configuration:
@@ -114,7 +118,7 @@ resources:
     requires:
       - name: app-api
 
-  - name: xtravels-j-db
+  - name: xtravels-db
     type: org.cloudfoundry.managed-service
     parameters:
       service: service-manager
@@ -123,7 +127,7 @@ resources:
   - name: xflights-db
     type: org.cloudfoundry.existing-service
 
-  - name: xtravels-j-registry
+  - name: xtravels-registry
     type: org.cloudfoundry.managed-service
     requires:
       - name: srv-api
@@ -131,9 +135,9 @@ resources:
       service: saas-registry
       service-plan: application
       config:
-        xsappname: xtravels-j-${org}-${space}
-        appName: xtravels-j-${org}-${space}
-        displayName: xtravels-j
+        xsappname: xtravels-${org}-${space}
+        appName: xtravels-${org}-${space}
+        displayName: xtravels
         description: A simple CAP project.
         category: 'Category'
         appUrls:

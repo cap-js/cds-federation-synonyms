@@ -1,5 +1,5 @@
 {
-  "name": "xtravels-j-mtx",
+  "name": "xtravels-mtx",
   "dependencies": {
     "@cap-js/cds-federation-synonyms": "file:../../../cap-js-cds-federation-synonyms-0.0.1.tgz",
     "@cap-js/hana": "^3",
@@ -26,7 +26,7 @@
       "db": {
         "kind": "hana",
         "vcap": {
-          "name": "xtravels-j-db"
+          "name": "xtravels-db"
         }
       },
       "xflights-db": {
