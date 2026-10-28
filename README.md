@@ -26,6 +26,10 @@ to learn about the basics.
 * Both "provider" and "consumer" are CAP apps, using SAP HANA as database.
 * Both "provider" and "consumer" run in the same SAP HANA instance, and,
   if Native Multitenancy in SAP HANA Cloud is switched on, live in the same tenant.
+* "Provider" and "consumer" must be deployed within the **same trust boundary** (the same
+  SAP BTP subaccount, or an organizational boundary with equivalent security controls and
+  mutual trust). See [Security considerations](#security-considerations) for why this is
+  required. Deploying them across different trust boundaries is **not supported**.
 
 The plugin uses two components which are under SAP properity licesenses. You need to review and accept them if you consume the plugin:
 * [@sap/hdi](https://www.npmjs.com/package/@sap/hdi)
@@ -110,6 +114,34 @@ For a detailed example, go to [Walkthrough](./doc/walkthrough.md).
 
 
 
+
+## Security considerations
+
+### Provider and consumer share a trust boundary
+
+Connecting synonyms requires the consumer application — specifically its MTX sidecar for
+multi-tenant consumers — to hold a binding to the **provider's SAP Service Manager**
+instance. This is configured as the `service-manager` property of a `cds.env.requires` entry
+(see [Consumer](#consumer) and the [Walkthrough](./doc/walkthrough.md)). At tenant
+onboarding and on each deployment, the plugin uses this binding to fetch the credentials of
+the provider's HDI container and establish the synonym trust.
+
+An SAP Service Manager binding is **not scoped to an individual HDI container**: it grants
+credentials for *every* HDI container managed by that Service Manager instance (Service
+Manager provides no per-container restriction). As a result, any party that can read the
+consumer's environment — its service bindings and `VCAP_SERVICES`, a compromised container,
+or a leaked technical (`internal-user`) token — obtains credentials for **all** containers
+under the provider's Service Manager, not only the one container used for the federation.
+
+Because the consumer effectively holds keys to the provider's entire Service Manager, the
+provider must fully trust the consumer. **Provider and consumer must therefore be deployed
+within the same trust boundary** — the same SAP BTP subaccount, or an organizational boundary
+with equivalent security controls and mutual trust.
+
+Deploying provider and consumer across different trust boundaries — for example different
+customers, or different SAP BTP global accounts — is **not supported** and constitutes a
+security risk, because it exposes the provider's container credentials to a party outside its
+trust boundary.
 
 ## Support, Feedback, Contributing
 
