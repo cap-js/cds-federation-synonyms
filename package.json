@@ -45,8 +45,7 @@
           "impl": "@cap-js/cds-federation-synonyms/lib/mtx-service.js"
         },
         "app-model": {
-          "model": "@cap-js/cds-federation-synonyms/lib/app-service.cds",
-          "impl": "@cap-js/cds-federation-synonyms/lib/app-service.js"
+          "model": "@cap-js/cds-federation-synonyms/lib/int-schema.cds"
         }
       }
     }

@@ -23,49 +23,7 @@ x-csrf-token: fetch
 
 
 ###############################################################################
-# reading/manipulating the config table - via app
-###############################################################################
-
-### read status
-GET {{tenant_url}}/synonymapi/Status
-x-approuter-authorization: Bearer {{token}}
-
-###
-POST {{tenant_url}}/synonymapi/getConfig
-Content-Type: application/json
-x-approuter-authorization: Bearer {{token}}
-
-###
-POST {{tenant_url}}/synonymapi/check
-Content-Type: application/json
-x-approuter-authorization: Bearer {{token}}
-
-{
-  "srv": "sap.capire.flights.FlightsService_syn"
-}
-
-###
-POST {{tenant_url}}/synonymapi/setDynamicConfig
-Content-Type: application/json
-x-approuter-authorization: Bearer {{token}}
-
-{
-  "srv": "sap.capire.flights.FlightsService_syn",
-  "provider_service_manager": "xflights-db"
-}
-
-###
-POST {{tenant_url}}/synonymapi/deleteDynamicConfig
-Content-Type: application/json
-x-approuter-authorization: Bearer {{token}}
-
-{
-  "srv": "sap.capire.flights.FlightsService_syn"
-}
-
-
-###############################################################################
-# reading/manipulating the config table - via mtx
+# reading/manipulating the config table
 ###############################################################################
 
 @tenant_id={{$dotenv tenant_id}}
