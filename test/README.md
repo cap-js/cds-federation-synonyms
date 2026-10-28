@@ -74,10 +74,10 @@ a full tenant upgrade (default: `true`; upgrade timeout: 5 min).
 ### syn-config.http
 
 VS Code REST Client file for manually invoking the `synonymapi` endpoints
-directly via the MTX sidecar (uses `mtx_token` with `Authorization`)
-and via the AppRouter (uses `token` with `x-approuter-authorization`).
+directly via the MTX sidecar (uses `mtx_token` with `Authorization`).
 
-Also includes a basic `GET .../Travel/Flights` smoke request.
+Also includes a basic `GET .../Travel/Flights` smoke request through the
+AppRouter (uses `token` with `x-approuter-authorization`).
 
 **Prerequisites:** See [Prerequisites for end-2-end tests](#prerequisites-for-end-2-end-tests) above.
 
@@ -152,8 +152,8 @@ BTP cockpit: subscriber subaccount → Overview → Subaccount details → **Sub
 A JWT that represents a specific **user** in the context of the subscriber tenant.
 Issued by the subscriber tenant's XSUAA via OAuth2 **password grant**.
 Carries the subscriber tenant context (`zid`) so the app server connects to the right
-tenant DB. Also carries app-specific scopes (e.g. `cds.Developer`) - but only if the
-corresponding role collection is assigned to the user in the **subscriber subaccount**.
+tenant DB, plus whatever app-specific scopes are assigned to the user in the
+**subscriber subaccount**.
 
 Used for requests through the AppRouter (`x-approuter-authorization` header).
 
@@ -182,7 +182,7 @@ A JWT that represents the **operator** (the SaaS app itself), with no user ident
 Issued by the operator XSUAA via OAuth2 **client credentials grant**.
 CAP treats this token as `internal-user`, granting access to privileged MTX sidecar
 endpoints (synonymapi, tenant upgrade, etc.).
-Does **not** carry `cds.Developer` or any subscriber tenant context.
+Does **not** carry any subscriber tenant context.
 
 Used for direct calls to the MTX sidecar (`Authorization: Bearer` header).
 

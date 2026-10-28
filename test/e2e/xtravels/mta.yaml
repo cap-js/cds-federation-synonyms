@@ -103,11 +103,6 @@ resources:
       config:
         xsappname: xtravels-${org}-${space}
         tenant-mode: shared
-        role-collections:
-          - name: 'xtravels-developer-${space}'
-            description: Develop xtravels
-            role-template-references:
-              - $XSAPPNAME.DataFederationAdmin
         oauth2-configuration:
           credential-types:
             - "binding-secret"
