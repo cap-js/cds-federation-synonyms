@@ -59,8 +59,8 @@ local mock tables (synonyms are "unconnected"), or to the respective tables/view
 The choice between connected and unconnected is made on service level.
 For a single tenant app, it is a deployment decision. For the tenants of a multi tenant app,
 you can use a static configuration or the synonyms can alternatively also be switched
-between connected and unconnected during runtime via an
-[API](./doc/config-service-api.md) provided by the plugin.
+between connected and unconnected during runtime via the MTX sidecar API
+(`/-/cds/synonymapi`) provided by the plugin.
 
 ### Schematic example
 

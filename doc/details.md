@@ -198,6 +198,9 @@ we need to explicitly specify the `TARGET_CONTAINER` (in _.env_ or in _mta.yaml_
 ### Multi-tenant consumer
 
 For multi tenant apps, the plugin provides an API to switch during runtime.
+This API is exposed on the MTX sidecar only (`/-/cds/synonymapi`); the operator
+calls it with an `internal-user` token. There is no runtime config API on the
+application itself.
 
 
 
@@ -206,15 +209,6 @@ Deployment and tenant subscription are not different from any other CAP applicat
 The synonyms for an imported service are initially deployed in "unconnected" state.
 
 Once tenant subscription has happened for a provider and consumer, the synonyms can
-be connected via an API in the consumer app that is provided via the plugin.
-Connect the imported service with the provider's service manager via
-```http
-POST {{server}}/setconf/setDynamicConfig
-
-{
-  "srv": "datasrv", "target": "provider-db"
-}
-```
-After calling the API, a tenant update must be explicitly triggered.
-
-
+be connected via the MTX sidecar API provided by the plugin. See [walkthrough](walkthrough.md).
+After calling the API, a tenant update must be explicitly triggered (or requested
+inline via `triggerUpgrade`).
