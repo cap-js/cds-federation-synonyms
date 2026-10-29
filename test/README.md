@@ -107,6 +107,20 @@ bash x_build-and-deploy.sh
 
 The apps can also be adapted for single-tenant deployments.
 
+The folder also contains `xtravels-j`, a **Java** variant of the `xtravels` consumer (the plain
+`xtravels` is Node.js). Both consumer variants deploy their CF apps and service instances under the
+**same names** (`xtravels`, `xtravels-srv`, `xtravels-mtx`, `xtravels-auth`, `xtravels-db`,
+`xtravels-registry`), even though their MTA IDs differ (`capire.xtravels` vs `capire.xtravels-j`).
+This is intentional: the identical names let the test scripts (_get-tokens.sh_, _syn-config.test.js_,
+_syn-config.http_) and _.env_ stay unchanged no matter which variant is deployed.
+
+The flip side is that the Node and Java consumers **cannot be deployed at the same time**. When
+switching from one to the other, undeploy the currently deployed one first, e.g.
+```sh
+cf undeploy capire.xtravels   --delete-services   # before deploying xtravels-j
+cf undeploy capire.xtravels-j --delete-services   # before deploying xtravels
+```
+
 
 ## Variables and Tokens
 

@@ -1,0 +1,4 @@
+[
+  "src/gen/**/*.hdbsynonym",
+  "cfg/gen/**/*.hdbsynonymconfig"
+]

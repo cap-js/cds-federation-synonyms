@@ -1,0 +1,13 @@
+{
+  "requires": {
+    "db": "hana",
+    "[production]": {
+      "auth": "xsuaa",
+      "multitenancy": true
+    },
+    "[with-mtx]": {
+      "multitenancy": true
+    }
+  },
+  "profile": "with-mtx-sidecar"
+}

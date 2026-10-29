@@ -1,0 +1,15 @@
+{
+  "name": "xtravels-j-cds",
+  "version": "1.0.0",
+  "devDependencies": {
+    "@sap/cds-dk": "^10",
+    "@sap/cds-mtxs": "^4"
+  },
+  "dependencies": {
+    "@cap-js/cds-federation-synonyms": "file:../cap-js-cds-federation-synonyms-0.0.1.tgz",
+    "@capire/xflights-data-syn": "file:../apis/capire-xflights-data-syn-0.1.3.tgz"
+  },
+  "workspaces": [
+    "mtx/sidecar"
+  ]
+}

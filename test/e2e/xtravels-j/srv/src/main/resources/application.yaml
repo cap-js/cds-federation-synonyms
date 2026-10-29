@@ -1,0 +1,31 @@
+
+---
+spring:
+  config.activate.on-profile: default
+  sql.init.platform: h2
+cds:
+  data-source.auto-config.enabled: false
+---
+management:
+  endpoint:
+    health:
+      show-components: always
+      probes:
+        enabled: true
+  endpoints:
+    web:
+      exposure:
+        include: health
+  health:
+    defaults:
+      enabled: false
+    ping:
+      enabled: true
+    db:
+      enabled: false
+---
+spring:
+  config.activate.on-profile: with-mtx
+cds:
+  multi-tenancy:
+    sidecar.url: http://localhost:4005/ # in production mode overwrite with the URL from mta.yaml
