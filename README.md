@@ -60,10 +60,12 @@ in your app's CDS model as described in
 On HANA, the entities in the imported data service are represented by synonyms that can either point to
 local mock tables (synonyms are "unconnected"), or to the respective tables/views in the provider app (synonyms are "connected").
 
-The choice between connected and unconnected is made on service level.
-For a single tenant app, it is a deployment decision. For the tenants of a multi tenant app,
-you can use a static configuration or the synonyms can alternatively also be switched
-between connected and unconnected during runtime via the MTX sidecar API
+The choice between connected and unconnected is made per provider service manager (SM): all CDS
+services that are mapped to the same SM are connected or disconnected together.
+For a single tenant app, it is a deployment decision. For a multi tenant app, the mapping of
+imported services to their provider SM is given as static configuration; whether an SM's synonyms
+are connected is then either fixed by that static config (connected on every deployment) or, if the
+SM is marked as `deferred`, switched at runtime via the MTX sidecar API
 (`/-/cds/synonymapi`) provided by the plugin.
 
 ### Schematic example
@@ -121,8 +123,8 @@ For a detailed example, go to [Walkthrough](./doc/walkthrough.md).
 
 Connecting synonyms requires the consumer application - specifically its MTX sidecar for
 multi-tenant consumers - to hold a binding to the provider's SAP Service Manager
-instance. This is configured as the `service-manager` property of a `cds.env.requires` entry
-(see [Consumer](#consumer) and the [Walkthrough](./doc/walkthrough.md)). On each HANA deployment,
+instance. This is configured via the `synonyms.service-manager` property of a `cds.env.requires`
+entry (see [Consumer](#consumer) and the [Walkthrough](./doc/walkthrough.md)). On each HANA deployment,
 the plugin uses this binding to fetch the credentials of
 the provider's HDI container and establish the synonym trust.
 

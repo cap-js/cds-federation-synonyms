@@ -206,14 +206,18 @@ application itself.
 
 For the deployment, the consumer app needs to be bound to the provider's service manager.
 Deployment and tenant subscription are not different from any other CAP application.
-The synonyms for an imported service are initially deployed in "unconnected" state.
+Whether an imported service's synonyms are connected on deployment depends on the static config of
+its provider service manager (SM): a plain SM mapping connects on every deployment, while an SM
+marked `deferred` starts in "unconnected" state (local mock tables) until connected via the API.
 
 > **Security:** this Service Manager binding is not limited to the single provider container
-> used for federation — it exposes credentials for *all* HDI containers under that Service
+> used for federation - it exposes credentials for *all* HDI containers under that Service
 > Manager. Provider and consumer must therefore be deployed within the same trust boundary.
 > See [Security considerations](../README.md#security-considerations).
 
-Once tenant subscription has happened for a provider and consumer, the synonyms can
-be connected via the MTX sidecar API provided by the plugin. See [walkthrough](walkthrough.md).
+Once tenant subscription has happened for a provider and consumer, the synonyms of a `deferred`
+service manager can be connected via the MTX sidecar API provided by the plugin. The API operates
+per service manager - `connect`/`unconnect` affect all imported services mapped to that SM together.
+See [walkthrough](walkthrough.md).
 After calling the API, a tenant update must be explicitly triggered (or requested
 inline via `triggerUpgrade`).

@@ -46,6 +46,21 @@ function cleanupDir(dir) {
   if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true })
 }
 
+// --- static config helpers (same as in config-helper.test.js) ---
+function addSrvConfig(srv, sm) {
+  cds.env.requires[srv] = { synonyms: { 'service-manager': sm } }
+}
+function addSmConfig(sm, { deferred, allowApiProviderTenant } = {}) {
+  const synonyms = {}
+  if (deferred !== undefined) synonyms.deferred = deferred
+  if (allowApiProviderTenant !== undefined) synonyms['allow-api-provider-tenant'] = allowApiProviderTenant
+  cds.env.requires[sm] = { credentials: { kind: 'hana' }, synonyms }
+}
+// per-SM connect state (presence = connected)
+function writeConfigTable(sm, provider_tenant = null) {
+  return INSERT.into('cds.dataproducts.synonyms.Registry').entries({ provider_service_manager: sm, provider_tenant })
+}
+
 
 beforeAll(async () => {
   cds.env.requires.db = { kind: 'sqlite', credentials: { url: ':memory:' } }
@@ -63,7 +78,7 @@ describe('PlugIntoMtx - before deploy handler', () => {
   let ds
 
   beforeAll(() => {
-    // Register PlugIntoMtx once — it wires up cds.on('served', ...)
+    // Register PlugIntoMtx once - it wires up cds.on('served', ...)
     // Each test swaps cds.services.['cds.xt.DeploymentService'] before firing
     ds = makeDeploymentService()
     cds.services['cds.xt.DeploymentService'] = ds
@@ -71,10 +86,12 @@ describe('PlugIntoMtx - before deploy handler', () => {
     cds.emit('served')
   })
 
-  afterEach(() => {
-    // Remove any hana-synonyms / sm entries added by the test
+  afterEach(async () => {
+    await DELETE.from('cds.dataproducts.synonyms.Registry')
+    // Remove any synonym mapping / SM entries added by the test (keep the db binding)
     for (const [k, v] of Object.entries(cds.env.requires)) {
-      if (v?.kind === 'hana-synonyms' || (typeof v === 'object' && v?.credentials)) delete cds.env.requires[k]
+      if (k === 'db') continue
+      if (v?.synonyms || (typeof v === 'object' && v?.credentials)) delete cds.env.requires[k]
     }
     cds.xt = undefined
   })
@@ -83,11 +100,10 @@ describe('PlugIntoMtx - before deploy handler', () => {
   it('service with static config and credentials → service replacement added to data.options', async () => {
     const srv            = 'sap.capire.flights'
     const smName         = 'sm-provider'
-    const providerTenant = 'prov-tenant-1'
     const fakeCredentials = { schema: 'TENANT_SCHEMA', url: 'jdbc:sap://host' }
 
-    cds.env.requires[srv]    = { kind: 'hana-synonyms', 'service-manager': smName, 'provider-tenant': providerTenant }
-    cds.env.requires[smName] = { credentials: { clientid: 'id', clientsecret: 'secret' } }
+    addSrvConfig(srv, smName)
+    addSmConfig(smName)  // static-controlled (no provider-tenant → own tenant is used)
 
     cds.services['cds.xt.ModelProviderService'] = {
       getCsn: async () => makeCsn([srv])
@@ -114,21 +130,21 @@ describe('PlugIntoMtx - before deploy handler', () => {
 
       await ds.fire(data)
 
-      // containerManager.get must be called with provider_tenant, not the deploying tenant
-      expect(capturedProviderTenant).to.equal(providerTenant)
+      // no provider_tenant configured → container fetched for the deploying (own) tenant
+      expect(capturedProviderTenant).to.equal('tenant-1')
 
       // The .hdbsynonymconfig and .hdbgrants files should still exist (service is connected)
       expect(fs.existsSync(path.join(outDir, `cfg/gen/${srv}.hdbsynonymconfig`))).to.be.true
       expect(fs.existsSync(path.join(outDir, `src/gen/${srv}.hdbgrants`))).to.be.true
 
-      // A service replacement should have been added
+      // A service replacement should have been added (provider_tenant null → '-null-' in the vcap name)
       const replacements = JSON.parse(data.options._.hdi.deployEnv.SERVICE_REPLACEMENTS)
-      expect(replacements).to.deep.include({ key: srv, service: `${smName}-${providerTenant}-vcap` })
+      expect(replacements).to.deep.include({ key: srv, service: `${smName}-null-vcap` })
 
       // VCAP entry should have been added with the right name
       const vcap = data.options._.hdi.deployEnv.VCAP_SERVICES
       expect(vcap.hana).to.have.lengthOf(1)
-      expect(vcap.hana[0].name).to.equal(`${smName}-${providerTenant}-vcap`)
+      expect(vcap.hana[0].name).to.equal(`${smName}-null-vcap`)
       expect(vcap.hana[0].credentials).to.deep.equal(fakeCredentials)
     } finally {
       cleanupDir(outDir)
@@ -139,7 +155,7 @@ describe('PlugIntoMtx - before deploy handler', () => {
   it('service with static config but no SM credentials → files removed, no service replacement', async () => {
     const srv = 'sap.capire.flights'
 
-    cds.env.requires[srv] = { kind: 'hana-synonyms', 'service-manager': 'sm-provider', 'provider-tenant': 'prov-t1' }
+    addSrvConfig(srv, 'sm-provider')
     // no cds.env.requires['sm-provider'] entry → no credentials
 
     cds.services['cds.xt.ModelProviderService'] = {
@@ -204,14 +220,13 @@ describe('PlugIntoMtx - before deploy handler', () => {
     const srvNoConfig     = 'sap.capire.cars'
     const smConnected     = 'sm-connected'
     const smNoCreds       = 'sm-no-creds'
-    const providerTenant  = 'prov-t1'
     const fakeCredentials = { schema: 'TENANT_SCHEMA', url: 'jdbc:sap://host' }
 
-    cds.env.requires[srvConnected] = { kind: 'hana-synonyms', 'service-manager': smConnected, 'provider-tenant': providerTenant }
-    cds.env.requires[srvNoCreds]   = { kind: 'hana-synonyms', 'service-manager': smNoCreds,   'provider-tenant': 'prov-t2' }
+    addSrvConfig(srvConnected, smConnected)
+    addSrvConfig(srvNoCreds, smNoCreds)
     // no entry for srvNoConfig
-    cds.env.requires[smConnected]  = { credentials: { clientid: 'id', clientsecret: 'secret' } }
-    // no entry for smNoCreds
+    addSmConfig(smConnected)  // has credentials
+    // no entry for smNoCreds → no credentials
 
     cds.services['cds.xt.ModelProviderService'] = {
       getCsn: async () => makeCsn([srvConnected, srvNoCreds, srvNoConfig])
@@ -245,29 +260,29 @@ describe('PlugIntoMtx - before deploy handler', () => {
       expect(fs.existsSync(path.join(outDir, `cfg/gen/${srvNoConfig}.hdbsynonymconfig`))).to.be.false
       expect(fs.existsSync(path.join(outDir, `src/gen/${srvNoConfig}.hdbgrants`))).to.be.false
 
-      // Exactly one service replacement for the connected service
+      // Exactly one service replacement for the connected service (provider_tenant null → '-null-' vcap name)
       const replacements = JSON.parse(data.options._.hdi.deployEnv.SERVICE_REPLACEMENTS)
       expect(replacements).to.have.lengthOf(1)
-      expect(replacements[0]).to.deep.equal({ key: srvConnected, service: `${smConnected}-${providerTenant}-vcap` })
+      expect(replacements[0]).to.deep.equal({ key: srvConnected, service: `${smConnected}-null-vcap` })
 
       // Exactly one VCAP entry
       expect(data.options._.hdi.deployEnv.VCAP_SERVICES.hana).to.have.lengthOf(1)
-      expect(data.options._.hdi.deployEnv.VCAP_SERVICES.hana[0].name).to.equal(`${smConnected}-${providerTenant}-vcap`)
+      expect(data.options._.hdi.deployEnv.VCAP_SERVICES.hana[0].name).to.equal(`${smConnected}-null-vcap`)
     } finally {
       cleanupDir(outDir)
     }
   })
 
 
-  it('two services using same SM but different provider tenants → two separate VCAP entries', async () => {
+  it('two services using the same SM connect together → single VCAP entry, two replacements', async () => {
     const srv1 = 'sap.capire.flights'
     const srv2 = 'sap.capire.hotels'
     const sm   = 'sm-shared'
     const fakeCredentials = { schema: 'SOME_SCHEMA', url: 'jdbc:sap://host' }
 
-    cds.env.requires[srv1] = { kind: 'hana-synonyms', 'service-manager': sm, 'provider-tenant': 'prov-t1' }
-    cds.env.requires[srv2] = { kind: 'hana-synonyms', 'service-manager': sm, 'provider-tenant': 'prov-t2' }
-    cds.env.requires[sm]   = { credentials: { clientid: 'id', clientsecret: 'secret' } }
+    addSrvConfig(srv1, sm)
+    addSrvConfig(srv2, sm)
+    addSmConfig(sm)
 
     cds.services['cds.xt.ModelProviderService'] = {
       getCsn: async () => makeCsn([srv1, srv2])
@@ -293,24 +308,75 @@ describe('PlugIntoMtx - before deploy handler', () => {
       expect(fs.existsSync(path.join(outDir, `cfg/gen/${srv1}.hdbsynonymconfig`))).to.be.true
       expect(fs.existsSync(path.join(outDir, `cfg/gen/${srv2}.hdbsynonymconfig`))).to.be.true
 
-      // Two separate service replacements and two VCAP entries
+      // provider_tenant is per-SM now → both services share a single VCAP entry, two replacements point at it
       const replacements = JSON.parse(data.options._.hdi.deployEnv.SERVICE_REPLACEMENTS)
       expect(replacements).to.have.lengthOf(2)
-      expect(replacements.find(r => r.key === srv1).service).to.equal(`${sm}-prov-t1-vcap`)
-      expect(replacements.find(r => r.key === srv2).service).to.equal(`${sm}-prov-t2-vcap`)
+      expect(replacements.find(r => r.key === srv1).service).to.equal(`${sm}-null-vcap`)
+      expect(replacements.find(r => r.key === srv2).service).to.equal(`${sm}-null-vcap`)
 
       const vcapHana = data.options._.hdi.deployEnv.VCAP_SERVICES.hana
-      expect(vcapHana).to.have.lengthOf(2)
-      expect(vcapHana.map(e => e.name).sort()).to.deep.equal([`${sm}-prov-t1-vcap`, `${sm}-prov-t2-vcap`].sort())
+      expect(vcapHana).to.have.lengthOf(1)
+      expect(vcapHana[0].name).to.equal(`${sm}-null-vcap`)
     } finally {
       cleanupDir(outDir)
     }
   })
 
 
-  it('inconsistent config (null SM, non-null provider_tenant) → service treated as unconnected', async () => {
+  it('deferred SM connected via table row with allowed provider tenant → container fetched for that tenant', async () => {
+    const srv            = 'sap.capire.flights'
+    const sm             = 'sm-deferred'
+    const providerTenant = 'prov-t1'
+    const fakeCredentials = { schema: 'TENANT_SCHEMA', url: 'jdbc:sap://host' }
+
+    addSrvConfig(srv, sm)
+    addSmConfig(sm, { deferred: true, allowApiProviderTenant: true })
+    await writeConfigTable(sm, providerTenant)
+
+    cds.services['cds.xt.ModelProviderService'] = {
+      getCsn: async () => makeCsn([srv])
+    }
+
+    let capturedProviderTenant
+    cds.xt = {
+      containerManager: {
+        newInstance: () => ({
+          get: async (tenant) => {
+            capturedProviderTenant = tenant
+            return { credentials: fakeCredentials }
+          }
+        })
+      }
+    }
+
+    const outDir = await makeTempOutDir([srv])
+    try {
+      const data = {
+        tenant: 'tenant-1',
+        options: { out: outDir, container: { credentials: { schema: 'CONTAINER_SCHEMA' } } }
+      }
+
+      await ds.fire(data)
+
+      // allowed provider_tenant from the table is used for the container lookup, not the deploying tenant
+      expect(capturedProviderTenant).to.equal(providerTenant)
+      expect(fs.existsSync(path.join(outDir, `cfg/gen/${srv}.hdbsynonymconfig`))).to.be.true
+
+      const replacements = JSON.parse(data.options._.hdi.deployEnv.SERVICE_REPLACEMENTS)
+      expect(replacements).to.deep.include({ key: srv, service: `${sm}-${providerTenant}-vcap` })
+      expect(data.options._.hdi.deployEnv.VCAP_SERVICES.hana[0].name).to.equal(`${sm}-${providerTenant}-vcap`)
+    } finally {
+      cleanupDir(outDir)
+    }
+  })
+
+
+  it('deferred SM without a table row → service treated as unconnected', async () => {
     const srv = 'sap.capire.flights'
-    await INSERT.into('cds.dataproducts.synonyms.Registry').entries({ srv, provider_service_manager: null, provider_tenant: 'prov-t1' })
+    const sm  = 'sm-deferred'
+
+    addSrvConfig(srv, sm)
+    addSmConfig(sm, { deferred: true })  // deferred, no table row → disconnected
 
     cds.services['cds.xt.ModelProviderService'] = {
       getCsn: async () => makeCsn([srv])
@@ -333,7 +399,6 @@ describe('PlugIntoMtx - before deploy handler', () => {
       expect(data.options._).to.be.undefined
     } finally {
       cleanupDir(outDir)
-      await DELETE.from('cds.dataproducts.synonyms.Registry')
     }
   })
 

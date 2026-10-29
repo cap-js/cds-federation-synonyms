@@ -11,5 +11,19 @@
   },
   "workspaces": [
     "mtx/sidecar"
-  ]
+  ],
+  "cds": {
+    "requires": {
+      "sap.capire.flights.FlightsService_syn": {
+        "synonyms": {
+          "service-manager": "xflights-db"
+        }
+      },
+      "xflights-db": {
+        "synonyms": {
+          "deferred": true
+        }
+      }
+    }
+  }
 }
