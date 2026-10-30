@@ -1,6 +1,6 @@
 # Technical details
 
-While the [walkthrough](./walktrough.md) provides only instructions to follow along,
+While the [walkthrough](./walkthrough.md) provides only instructions to follow along,
 this document adds some background information.
 
 In general, the plugin has two jobs:
@@ -213,13 +213,30 @@ of two kinds of entries, each living in its natural home:
 
 The mapping is read from the main app's `package.json`; the per-SM policy is read from the
 sidecar's own `package.json`, alongside the credential binding. The app's own HDI container in the
-sidecar must use the requires key `db` (see [Multi-tenant consumer](#multi-tenant-consumer)).
+sidecar must use the requires key `db`: MTX uses this key to identify its deploy target, and with
+multiple HANA bindings present (the own container plus one or more provider SMs) the key must be
+unambiguous.
 
 Note the two roles the SM plays. The credential-bearing **binding** to the provider's Service
 Manager is the sidecar's `kind`/`vcap` entry together with the actual deployment binding (e.g. in
 _mta.yaml_ or via `cf bind-service`); this is what provides the credentials used to reach the
 provider's HDI container. The `synonyms.service-manager` **mapping** only links an imported CDS
 service to that SM by name - it carries no credentials itself.
+
+### Putting it together
+
+Wiring up one provider SM (call it `<sm>`) for a multi-tenant consumer touches **three** files, and
+the **same `<sm>` name must be used in all of them**:
+
+| File | What to add | Where `<sm>` appears |
+| --- | --- | --- |
+| main app `package.json` | service → SM mapping: `synonyms: { "service-manager": "<sm>" }` on the imported CDS service | the `service-manager` value |
+| `mtx/sidecar/package.json` | SM binding + policy: `"<sm>": { "kind": "hana", "vcap": { "name": "<sm>" }, "synonyms": { "deferred": … } }` | the entry key **and** `vcap.name` |
+| `mta.yaml` | an `existing-service` resource for the provider SM, plus a `requires` entry on the sidecar module so it is bound at deploy time | the resource name (and the `requires` entry) |
+
+The `mta.yaml` binding is standard CF service-binding plumbing; without it the sidecar's `vcap.name`
+resolves to nothing at runtime and no credentials are found. See the
+[Walkthrough](walkthrough.md) for a complete `mta.yaml` example (static and dynamic binding).
 
 ### Connect state and resolution
 
@@ -230,8 +247,11 @@ to connect:
 - A statically-controlled SM (not `deferred`) is always connected.
 - A `deferred` SM is connected if and only if a registry row exists for it.
 
-The `connect`/`unconnect` API (exposed on the MTX sidecar for `deferred` SMs) sets this desired
-state; the actual synonym redirection then happens on the next tenant deployment.
+The `connect`/`unconnect` API (exposed on the MTX sidecar for `deferred` SMs; the application
+itself exposes no such API) sets this desired state. It operates per service manager -
+`connect`/`unconnect` affect all imported services mapped to that SM together. The actual synonym
+redirection then happens on the next tenant deployment, which must be triggered explicitly (or
+requested inline via the `triggerUpgrade` parameter).
 
 ### The `provider_tenant` parameter
 
@@ -293,26 +313,19 @@ we need to explicitly specify the `TARGET_CONTAINER` (in _.env_ or in _mta.yaml_
 
 ### Multi-tenant consumer
 
-For the deployment, the consumer app needs to be bound to the provider's service manager.
-Deployment and tenant subscription are not different from any other CAP application.
-In `mtx/sidecar/package.json`, the app's own HDI container (or service manager) binding must use
-the requires key `db` -- MTX uses this key to identify its deploy target, and with multiple HANA
-bindings present the key must be unambiguous.
+Deployment and tenant subscription are no different from any other multi-tenant CAP
+application. The synonym-specific setup is:
+
+1. Declare the static config and bind the provider's service manager to the sidecar -
+   see [Putting it together](#putting-it-together) for the three files involved (and the
+   [Walkthrough](walkthrough.md) for a complete `mta.yaml`).
+2. Deploy and subscribe tenants as usual.
+3. For a `deferred` SM, connect its synonyms at runtime via the MTX sidecar API
+   (`/-/cds/synonymapi`, called with an `internal-user` token) - see
+   [Connect state and resolution](#connect-state-and-resolution). A non-`deferred` SM is
+   already connected on deployment and needs no API call.
 
 > **Security:** the binding to the provider's Service Manager is not limited to the single provider container
 > used for federation - it exposes credentials for *all* HDI containers under that Service
 > Manager. Provider and consumer must therefore be deployed within the same trust boundary.
 > See [Security considerations](../README.md#security-considerations).
-
-The mapping of imported services to their provider SM is given as static configuration (see [Configuration](#configuration)).
-By default, a plain SM mapping connects synonyms on every deployment. If an SM is marked `deferred`
-in the static config, its synonyms start in "unconnected" state (local mock tables) and must be
-switched at runtime via the API.
-
-For `deferred` service managers, the plugin exposes an API on the MTX sidecar (`/-/cds/synonymapi`).
-The operator calls it with an `internal-user` token; there is no runtime config API on the
-application itself. The API operates per service manager -- `connect`/`unconnect` affect all
-imported services mapped to that SM together.
-After calling the API, a tenant update must be explicitly triggered (or requested
-inline via `triggerUpgrade`).
-See [walkthrough](walkthrough.md).
