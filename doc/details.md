@@ -171,37 +171,49 @@ apps, the connection is a deployment decision made via `SERVICE_REPLACEMENTS` / 
 (see [Single-tenant consumer](#single-tenant-consumer)); none of the `synonyms` entries below apply.
 
 The synonym configuration is given statically as part of the app's `cds.requires`. It consists
-of two kinds of entries, both carrying a `synonyms` block:
+of two kinds of entries, each living in its natural home:
 
 - **Service mapping** - maps an imported CDS service to the provider's service manager (SM) via
-  `synonyms: { "service-manager": <sm> }`. Only services with such a mapping can ever be connected.
-- **SM policy** - optional per-SM settings, placed under `synonyms` on the SM's own `cds.requires`
-  entry:
+  `synonyms: { "service-manager": <sm> }`. This is model intent, so it lives in the **main app's**
+  `package.json`. Only services with such a mapping can ever be connected.
+- **SM policy** - optional per-SM settings, placed under `synonyms` on the SM's credential-binding
+  entry in the **sidecar's** `mtx/sidecar/package.json` (next to its `kind`/`vcap`):
   - `deferred` (default `false`): if `false`, the SM's synonyms are connected on every deployment
     (static control). If `true`, they start unconnected and are switched at runtime via the API.
   - `allow-api-provider-tenant` (default `false`): if `true`, a provider tenant supplied through
     the API is honored; otherwise the provider's own tenant is used. Only meaningful for `deferred` SMs.
 
 ```jsonc
+// main app package.json - the service mapping (model intent)
 {
   "cds": {
     "requires": {
-      // service mapping: this imported service belongs to SM "xflights-db"
       "sap.capire.flights.FlightsService_syn": {
         "synonyms": { "service-manager": "xflights-db" }
-      },
-      // SM policy: xflights-db is API-controlled
-      "xflights-db": {
-        "synonyms": { "deferred": true }
       }
     }
   }
 }
 ```
 
-This config is read from the main app's `package.json` by the MTX sidecar.
-The SM credentials binding itself lives in `mtx/sidecar/package.json`, where the app's own HDI
-container must use the requires key `db` (see [Multi-tenant consumer](#multi-tenant-consumer)).
+```jsonc
+// mtx/sidecar/package.json - the SM binding carries the policy
+{
+  "cds": {
+    "requires": {
+      "xflights-db": {
+        "kind": "hana",
+        "vcap": { "name": "xflights-db" },
+        "synonyms": { "deferred": true }   // SM policy lives with the binding
+      }
+    }
+  }
+}
+```
+
+The mapping is read from the main app's `package.json`; the per-SM policy is read from the
+sidecar's own `package.json`, alongside the credential binding. The app's own HDI container in the
+sidecar must use the requires key `db` (see [Multi-tenant consumer](#multi-tenant-consumer)).
 
 ### Connect state and resolution
 

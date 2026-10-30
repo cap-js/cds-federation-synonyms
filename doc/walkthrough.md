@@ -469,15 +469,15 @@ You should see the data coming directly from the xflights app - the synonyms are
 
 By default a mapped service manager's synonyms are connected on every deployment. If instead you want
 to decide at runtime when they are connected - e.g. connect only once the provider tenant is ready, or
-temporarily disconnect again - mark the service manager as `deferred` in the static config:
+temporarily disconnect again - mark the service manager as `deferred`. The policy goes on the SM's
+binding entry in _mtx/sidecar/package.json_ (the mapping in the app's _package.json_ stays unchanged):
 ```jsonc
   "cds": {
     "requires": {
-      "sap.capire.flights.FlightsService_syn": {
-        "synonyms": { "service-manager": "xflights-db" }
-      },
-      // 'deferred' -> the connect state is controlled via the API, not on deployment
       "xflights-db": {
+        "kind": "hana",
+        "vcap": { "name": "xflights-db" },
+        // 'deferred' -> the connect state is controlled via the API, not on deployment
         "synonyms": { "deferred": true }
       },
       // ...

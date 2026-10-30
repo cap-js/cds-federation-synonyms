@@ -29,6 +29,9 @@
         "kind": "hana",
         "vcap": {
           "name": "xflights-db"
+        },
+        "synonyms": {
+          "deferred": true
         }
       }
     }

@@ -30,11 +30,6 @@
         "synonyms": {
           "service-manager": "xflights-db"
         }
-      },
-      "xflights-db": {
-        "synonyms": {
-          "deferred": true
-        }
       }
     },
     "profile": "with-mtx-sidecar"
