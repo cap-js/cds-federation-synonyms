@@ -227,6 +227,32 @@ to connect:
 The `connect`/`unconnect` API (exposed on the MTX sidecar for `deferred` SMs) sets this desired
 state; the actual synonym redirection then happens on the next tenant deployment.
 
+### The `provider_tenant` parameter
+
+By default the synonyms of a connected SM point to the provider container of the **own (deploying)
+tenant** - i.e. the consumer tenant's synonyms federate to the provider data of the same tenant.
+This is the normal case and needs no configuration.
+
+The `connect` action accepts an optional `provider_tenant` parameter that overrides this: the
+synonyms are then pointed at the provider container of the *named* tenant instead of the deploying
+one. This is only permitted when the SM's static policy sets `allow-api-provider-tenant: true`;
+otherwise `connect` rejects any non-null `provider_tenant` (HTTP 422).
+
+```jsonc
+// connect, overriding the provider tenant (requires allow-api-provider-tenant: true on the SM)
+{ "tenant": "<consumer-tenant>", "sm": "xflights-db", "provider_tenant": "<provider-tenant>" }
+```
+
+> **Security:** `provider_tenant` points one tenant's synonyms at *another* tenant's provider data,
+> i.e. it effectively lets one tenant read another tenant's data. The value is **not** checked
+> against any authorized-pairing allow-list - once `allow-api-provider-tenant` is on, any subscriber
+> tenant of the provider can be named, so a caller holding (or compromising) the `internal-user`
+> role could expose one tenant's data to another. Enable the flag and pass a `provider_tenant` only
+> for tenant pairings that are legitimate and within the same trust boundary
+> (see [Security considerations](../README.md#security-considerations)). Leave the flag unset
+> (the default) whenever a tenant should only ever see its own provider data; in that state no
+> caller-supplied tenant is accepted at all.
+
 
 ## Deploy to HANA
 

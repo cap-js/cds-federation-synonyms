@@ -147,6 +147,25 @@ customers, or different SAP BTP global accounts - is **not supported** and const
 security risk, because it exposes the provider's container credentials to a party outside its
 trust boundary.
 
+### Cross-tenant federation via `provider_tenant`
+
+By default a consumer tenant's synonyms federate to the provider data of the **same (own) tenant**,
+and no other tenant can be targeted. The `connect` API optionally accepts a `provider_tenant`
+parameter that points a tenant's synonyms at *another* tenant's provider container.
+
+**Enabling this effectively lets one tenant read another tenant's data.** The supplied
+`provider_tenant` is **not** validated against any authorized-pairing allow-list: once the flag is
+on, any subscriber tenant of the provider can be named as the source. Because the API requires the
+`internal-user` role, a caller who holds that role - or who compromises, or is wrongly given access
+to, that principal - can point one tenant at another tenant's data, an isolation breach. Treat the
+flag as a deliberate cross-tenant data-sharing switch, not a routine option.
+
+It is disabled by default: unless the service manager's static policy sets
+`allow-api-provider-tenant: true`, any `provider_tenant` is rejected and a tenant can only ever see
+its own provider data (see [Configuration](./doc/details.md#the-provider_tenant-parameter)). Enable
+it only for tenant pairings that are legitimate and within the shared trust boundary described
+above, and restrict access to the `internal-user`-protected API accordingly.
+
 ## Support, Feedback, Contributing
 
 This project is open to feature requests/suggestions, bug reports etc. via [GitHub issues](https://github.com/cap-js/cds-federation-synonyms/issues). Contribution and feedback are encouraged and always welcome. For more information about how to contribute, the project structure, as well as additional contribution information, see our [Contribution Guidelines](CONTRIBUTING.md).
