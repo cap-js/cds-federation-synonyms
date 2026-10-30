@@ -31,7 +31,8 @@ to learn about the basics.
   mutual trust). See [Security considerations](#security-considerations) for why this is
   required. Deploying them across different trust boundaries is **not supported**.
 
-The plugin uses two components which are under SAP properity licesenses. You need to review and accept them if you consume the plugin:
+The plugin uses two components which are under SAP proprietary licenses.
+You need to review and accept them if you consume the plugin:
 * [@sap/hdi](https://www.npmjs.com/package/@sap/hdi)
 * [@sap/xssec](https://www.npmjs.com/package/@sap/xssec)
 
@@ -54,17 +55,22 @@ For more information on API packages, see
 ### Consumer
 
 Import the API package, define consumption views on top of the imported entities and use them
-in your app's CDS model as described in
+in your app's CDS model, as described in
 [CAP-level Data Federation](https://pages.github.tools.sap/cap/docs/guides/integration/data-federation#cap-level-data-federation).
 
 On HANA, the entities in the imported data service are represented by synonyms that can either point to
 local mock tables (synonyms are "unconnected"), or to the respective tables/views in the provider app (synonyms are "connected").
 
-The choice between connected and unconnected is made on service level.
-For a single tenant app, it is a deployment decision. For the tenants of a multi tenant app,
-you can use a static configuration or the synonyms can alternatively also be switched
-between connected and unconnected during runtime via the MTX sidecar API
+The choice between connected and unconnected is made per provider HDI container instance in a single-tenant app,
+or per provider service manager (SM) in a multi-tenant app: all CDS
+services that are mapped to the same HDI container instance (or SM) are connected or disconnected together.
+For a single tenant app, it is a deployment decision. For a multi tenant app, the mapping of
+imported services to their provider SM is given as static configuration; whether an SM's synonyms
+are connected is then either fixed by that static config (connected on every deployment) or, if the
+SM is marked as `deferred`, switched at runtime via the MTX sidecar API
 (`/-/cds/synonymapi`) provided by the plugin.
+
+For the full configuration model, see [Configuration](./doc/details.md#configuration).
 
 ### Schematic example
 
@@ -112,19 +118,15 @@ in the producer app ("connected").
 For a detailed example, go to [Walkthrough](./doc/walkthrough.md).
 
 
-
-
-
 ## Security considerations
 
 ### Provider and consumer share a trust boundary
 
 Connecting synonyms requires the consumer application - specifically its MTX sidecar for
-multi-tenant consumers - to hold a binding to the provider's SAP Service Manager
-instance. This is configured as the `service-manager` property of a `cds.env.requires` entry
-(see [Consumer](#consumer) and the [Walkthrough](./doc/walkthrough.md)). On each HANA deployment,
-the plugin uses this binding to fetch the credentials of
-the provider's HDI container and establish the synonym trust.
+multi-tenant consumers - to hold a binding to the provider's SAP Service Manager instance
+(how this binding and the service mapping are set up is described under
+[Configuration](./doc/details.md#configuration)). On each HANA deployment, the plugin uses this
+binding to fetch the credentials of the provider's HDI container and establish the synonym trust.
 
 An SAP Service Manager binding is not scoped to an individual HDI container: it grants
 credentials for *every* HDI container managed by that Service Manager instance (Service
@@ -143,6 +145,25 @@ Deploying provider and consumer across different trust boundaries - for example 
 customers, or different SAP BTP global accounts - is **not supported** and constitutes a
 security risk, because it exposes the provider's container credentials to a party outside its
 trust boundary.
+
+### Cross-tenant federation via `provider_tenant`
+
+By default a consumer tenant's synonyms federate to the provider data of the **same (own) tenant**,
+and no other tenant can be targeted. The `connect` API optionally accepts a `provider_tenant`
+parameter that points a tenant's synonyms at *another* tenant's provider container.
+
+**Enabling this effectively lets one tenant read another tenant's data.** The supplied
+`provider_tenant` is **not** validated against any authorized-pairing allow-list: once the flag is
+on, any subscriber tenant of the provider can be named as the source. Because the API requires the
+`internal-user` role, a caller who holds that role - or who compromises, or is wrongly given access
+to, that principal - can point one tenant at another tenant's data, an isolation breach. Treat the
+flag as a deliberate cross-tenant data-sharing switch, not a routine option.
+
+It is disabled by default: unless the service manager's static policy sets
+`allow-api-provider-tenant: true`, any `provider_tenant` is rejected and a tenant can only ever see
+its own provider data (see [Configuration](./doc/details.md#the-provider_tenant-parameter)). Enable
+it only for tenant pairings that are legitimate and within the shared trust boundary described
+above, and restrict access to the `internal-user`-protected API accordingly.
 
 ## Support, Feedback, Contributing
 

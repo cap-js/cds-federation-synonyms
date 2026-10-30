@@ -47,7 +47,7 @@ Runs entirely locally, no deployment or credentials needed.
 Unit test for _lib/config-helper.js_.
 Boots CDS with an in-memory SQLite DB and mocks _lib/status-sql.js_ (this file calls `ModelProviderService.getCsn()` when
 running inside the MTX sidecar and queries `SYS.SYNONYMS`, neither of which is available in the local test environment).
-Covers static config, dynamic config only, and the precedence rules between them (dynamic overrides static).
+Covers the per-service resolution (`getResolvedConfig`): static-controlled vs. deferred (API-controlled) service managers, and the per-SM connect state from the config table..
 
 Runs entirely locally, no deployment or credentials needed.
 
@@ -60,9 +60,17 @@ and `VCAP_SERVICES` are built correctly. Also covers the `gen/base` shared-dir c
 
 Runs entirely locally, no deployment or credentials needed.
 
+### mtx-service.test.js
+
+Unit/integration test for the MTX `ConfigService` `connect` / `unconnect` actions (_lib/mtx-service.js_).
+Boots the service via `cds.serve` with an in-memory SQLite DB and a stubbed `DeploymentService`, then drives the
+actions through `srv.send`. Covers the validation/reject paths as well as the happy paths.
+
+Runs entirely locally, no deployment or credentials needed.
+
 ### syn-config.test.js
 
-Automated end-to-end test for the MTX `synonymapi` endpoints (`getConfig`, `check`, `setDynamicConfig`, `deleteDynamicConfig`).
+Automated end-to-end test for the MTX `synonymapi` endpoints (`getConfig`, `check`, `connect`, `unconnect`).
 Calls the live MTX sidecar directly (bypassing the AppRouter).
 
 **Prerequisites:** See [Prerequisites for end-2-end tests](#prerequisites-for-end-2-end-tests) above.

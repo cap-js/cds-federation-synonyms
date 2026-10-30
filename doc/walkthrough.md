@@ -393,7 +393,9 @@ to bind to the HANA service manager of xflights and to ensure that we deploy to 
   }
 ```
 
-Note: The entry for the HDI container where we want to deploy to _must_ have the name `db`.
+Note: The entry for the app's own HDI container (or service manager) _must_ use the requires key `db`.
+MTX identifies its deploy target by this key -- with multiple HANA bindings present (own container plus
+provider SM), any other name would be ambiguous.
 
 xtravels-mtx needs to be bound to xflights-db. This can be done either statically via _mta.yaml_,
 or dynamically after the deployment. Dynamic binding is necessary when you can't control the
@@ -425,20 +427,23 @@ which fails, if xflights-db is required in the _mta.yaml_ of xtravels.
     ```
 * Dynamic binding: Don't mention xflights-db in _mta.yaml_
 
-You can provide the connection info for the synonym as a static config in
+You provide the mapping of the imported service to its provider service manager as static config in
 the xtravel _package.json_ (requires the CF service to be bound before the app starts, i.e. via static binding or after `cf restage`):
 ```jsonc
   "cds": {
     "requires": {
+      // map the imported CDS service to the provider's service manager
       "sap.capire.flights.FlightsService_syn": {
-        "kind": "hana-synonyms",
-        "service-manager": "xflights-db"
+        "synonyms": { "service-manager": "xflights-db" }
       },
       // ...
     }
   }
 ```
 
+With this mapping, the synonyms of the service manager `xflights-db` are connected automatically on
+every HANA deployment: all imported services mapped to it point to the provider's tables/views.
+This is the default and recommended setup.
 
 Build and deploy:
 ```sh
@@ -452,51 +457,63 @@ cf bind-service xtravels-mtx xflights-db
 cf restage xtravels-mtx
 ```
 
-If you don't want to or cannot use a static config for the connection info, you
-can connect/unconnect the synonyms via an API. This dynamic configuration
-overrules the static config.
-
-### Connecting synonyms
-
-After creating subscriptions for xflights and xtravels,
-the synonyms in xtravels initially point to the local mock tables.
-
-Query the Flights exposed in the travel service:
+After creating subscriptions for xflights and xtravels, query the Flights exposed in the travel service:
 ```
 https://<host_name>.<domain_name>/odata/v4/Travel/Flights
 https://sf4-cdsruntime-sflight-dev-xtravels.cfapps.sap.hana.ondemand.com/odata/v4/Travel/Flights
 ```
-You should see the data fed into the local mock tables via the _csv_ files of the imported API.
+You should see the data coming directly from the xflights app - the synonyms are connected.
 
 
-To switch the synonyms, i.e. connect/disconnect the imported service `sap.capire.flights.FlightsService_syn` to/from
-the `xflights-db` HDI container, use the MTX sidecar `synonymapi` (see the requests below) in xtravels-mtx.
+### Deferring the connection
+
+By default a mapped service manager's synonyms are connected on every deployment. If instead you want
+to decide at runtime when they are connected - e.g. connect only once the provider tenant is ready, or
+temporarily disconnect again - mark the service manager as `deferred`. The policy goes on the SM's
+binding entry in _mtx/sidecar/package.json_ (the mapping in the app's _package.json_ stays unchanged):
+```jsonc
+  "cds": {
+    "requires": {
+      "xflights-db": {
+        "kind": "hana",
+        "vcap": { "name": "xflights-db" },
+        // 'deferred' -> the connect state is controlled via the API, not on deployment
+        "synonyms": { "deferred": true }
+      },
+      // ...
+    }
+  }
+```
+
+A `deferred` service manager starts unconnected: after subscription its synonyms point to the local
+mock tables (querying `.../odata/v4/Travel/Flights` returns the mock data from the imported API's _csv_
+files) until you connect them via the MTX sidecar `synonymapi` in xtravels-mtx. `connect`/`unconnect`
+operate on the whole service manager - all imported services mapped to it (here
+`sap.capire.flights.FlightsService_syn`) are switched together.
 
 Note: The requests shown here are lacking authorization details. See [the test README](../test/README.md) for
 more info on tokens and [complete example requests](../test/syn-config.http).
 
-
-Set dynamic config (connect the synonyms):
+Connect the synonyms:
 ```http
-POST {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/setDynamicConfig
+POST {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/connect
 
 {
   "tenant": "{{tenant_id}}",
-  "srv": "sap.capire.flights.FlightsService_syn",
-  "provider_service_manager": "xflights-db",
+  "sm": "xflights-db",
   "triggerUpgrade": true
 }
 ```
 
 Query Flights again, you should now see the data coming directly from the xflights app.
 
-Delete dynamic config (disconnect the synonyms):
+Unconnect the synonyms:
 ```http
-POST {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/deleteDynamicConfig
+POST {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/unconnect
 
 {
   "tenant": "{{tenant_id}}",
-  "srv": "sap.capire.flights.FlightsService_syn",
+  "sm": "xflights-db",
   "triggerUpgrade": true
 }
 ```
@@ -514,7 +531,7 @@ POST {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/check
 }
 ```
 
-Read the complete config table:
+Read the resolved configuration (one entry per imported service):
 ```http
 POST {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/getConfig
 
@@ -523,7 +540,8 @@ POST {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/getConfig
 }
 ```
 
-Query a monitoring view to get status information on synonym level:
+Get per-synonym status information (`connected` vs. `mock`) for all synonyms in the app (all imported
+services, for the given tenant), not scoped to a single service or service manager:
 ```http
 GET {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/Status(tenant='{{tenant_id}}')/Set
 ```
