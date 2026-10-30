@@ -184,7 +184,7 @@ describe('ConfigService config round-trip (set via API, read back via getConfig)
     addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { deferred: true })
     const config = await getConfig()
     expect(config).to.deep.equal([
-      { srv: 'svc-a', provider_service_manager: null, provider_tenant: null, config_origin: 'api' }
+      { srv: 'svc-a', provider_service_manager: null, provider_tenant: null, connect_mode: 'dynamic' }
     ])
   })
 
@@ -193,7 +193,7 @@ describe('ConfigService config round-trip (set via API, read back via getConfig)
     await call('connect', { tenant: 't1', sm: 'sm-a' })
     const config = await getConfig()
     expect(config).to.deep.equal([
-      { srv: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, config_origin: 'api' }
+      { srv: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'dynamic' }
     ])
   })
 
@@ -202,7 +202,7 @@ describe('ConfigService config round-trip (set via API, read back via getConfig)
     await call('connect', { tenant: 't1', sm: 'sm-a', provider_tenant: 'pt1' })
     const config = await getConfig()
     expect(config).to.deep.equal([
-      { srv: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: 'pt1', config_origin: 'api' }
+      { srv: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: 'pt1', connect_mode: 'dynamic' }
     ])
   })
 
@@ -212,7 +212,7 @@ describe('ConfigService config round-trip (set via API, read back via getConfig)
     await call('unconnect', { tenant: 't1', sm: 'sm-a' })
     const config = await getConfig()
     expect(config).to.deep.equal([
-      { srv: 'svc-a', provider_service_manager: null, provider_tenant: null, config_origin: 'api' }
+      { srv: 'svc-a', provider_service_manager: null, provider_tenant: null, connect_mode: 'dynamic' }
     ])
   })
 
@@ -222,9 +222,9 @@ describe('ConfigService config round-trip (set via API, read back via getConfig)
     await call('connect', { tenant: 't1', sm: 'sm-shared' })
     const config = (await getConfig()).sort((a, b) => a.srv.localeCompare(b.srv))
     expect(config[0]).to.deep.equal(
-      { srv: 'svc-a', provider_service_manager: 'sm-shared', provider_tenant: null, config_origin: 'api' })
+      { srv: 'svc-a', provider_service_manager: 'sm-shared', provider_tenant: null, connect_mode: 'dynamic' })
     expect(config[1]).to.deep.equal(
-      { srv: 'svc-b', provider_service_manager: 'sm-shared', provider_tenant: null, config_origin: 'api' })
+      { srv: 'svc-b', provider_service_manager: 'sm-shared', provider_tenant: null, connect_mode: 'dynamic' })
   })
 
 })
