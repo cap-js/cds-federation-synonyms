@@ -70,6 +70,8 @@ are connected is then either fixed by that static config (connected on every dep
 SM is marked as `deferred`, switched at runtime via the MTX sidecar API
 (`/-/cds/synonymapi`) provided by the plugin.
 
+For the full configuration model, see [Configuration](./doc/details.md#configuration).
+
 ### Schematic example
 
 Consumer app:

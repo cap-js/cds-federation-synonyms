@@ -164,6 +164,58 @@ File _sap.capire.flights.data\_syn.hdbgrants_:
 ```
 
 
+## Configuration
+
+The `synonyms` configuration described here applies to **multi-tenant** apps. For single-tenant
+apps, the connection is a deployment decision made via `SERVICE_REPLACEMENTS` / `TARGET_CONTAINER`
+(see [Single-tenant consumer](#single-tenant-consumer)); none of the `synonyms` entries below apply.
+
+The synonym configuration is given statically as part of the app's `cds.requires`. It consists
+of two kinds of entries, both carrying a `synonyms` block:
+
+- **Service mapping** - maps an imported CDS service to the provider's service manager (SM) via
+  `synonyms: { "service-manager": <sm> }`. Only services with such a mapping can ever be connected.
+- **SM policy** - optional per-SM settings, placed under `synonyms` on the SM's own `cds.requires`
+  entry:
+  - `deferred` (default `false`): if `false`, the SM's synonyms are connected on every deployment
+    (static control). If `true`, they start unconnected and are switched at runtime via the API.
+  - `allow-api-provider-tenant` (default `false`): if `true`, a provider tenant supplied through
+    the API is honored; otherwise the provider's own tenant is used. Only meaningful for `deferred` SMs.
+
+```jsonc
+{
+  "cds": {
+    "requires": {
+      // service mapping: this imported service belongs to SM "xflights-db"
+      "sap.capire.flights.FlightsService_syn": {
+        "synonyms": { "service-manager": "xflights-db" }
+      },
+      // SM policy: xflights-db is API-controlled
+      "xflights-db": {
+        "synonyms": { "deferred": true }
+      }
+    }
+  }
+}
+```
+
+This config is read from the main app's `package.json` by the MTX sidecar.
+The SM credentials binding itself lives in `mtx/sidecar/package.json`, where the app's own HDI
+container must use the requires key `db` (see [Multi-tenant consumer](#multi-tenant-consumer)).
+
+### Connect state and resolution
+
+The connect state of a `deferred` SM is stored per SM in a registry table: a row means connected,
+no row means disconnected. On each deployment the plugin resolves, per imported service, whether
+to connect:
+
+- A statically-controlled SM (not `deferred`) is always connected.
+- A `deferred` SM is connected if and only if a registry row exists for it.
+
+The `connect`/`unconnect` API (exposed on the MTX sidecar for `deferred` SMs) sets this desired
+state; the actual synonym redirection then happens on the next tenant deployment.
+
+
 ## Deploy to HANA
 
 ### Provider
@@ -208,7 +260,7 @@ bindings present the key must be unambiguous.
 > Manager. Provider and consumer must therefore be deployed within the same trust boundary.
 > See [Security considerations](../README.md#security-considerations).
 
-The mapping of imported services to their provider SM is given as static configuration (see [Configuration](../README.md#configuration)).
+The mapping of imported services to their provider SM is given as static configuration (see [Configuration](#configuration)).
 By default, a plain SM mapping connects synonyms on every deployment. If an SM is marked `deferred`
 in the static config, its synonyms start in "unconnected" state (local mock tables) and must be
 switched at runtime via the API.
