@@ -123,11 +123,10 @@ For a detailed example, go to [Walkthrough](./doc/walkthrough.md).
 ### Provider and consumer share a trust boundary
 
 Connecting synonyms requires the consumer application - specifically its MTX sidecar for
-multi-tenant consumers - to hold a binding to the provider's SAP Service Manager
-instance. This is configured via the `synonyms.service-manager` property of a `cds.env.requires`
-entry (see [Consumer](#consumer) and the [Walkthrough](./doc/walkthrough.md)). On each HANA deployment,
-the plugin uses this binding to fetch the credentials of
-the provider's HDI container and establish the synonym trust.
+multi-tenant consumers - to hold a binding to the provider's SAP Service Manager instance
+(how this binding and the service mapping are set up is described under
+[Configuration](./doc/details.md#configuration)). On each HANA deployment, the plugin uses this
+binding to fetch the credentials of the provider's HDI container and establish the synonym trust.
 
 An SAP Service Manager binding is not scoped to an individual HDI container: it grants
 credentials for *every* HDI container managed by that Service Manager instance (Service

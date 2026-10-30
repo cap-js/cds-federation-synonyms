@@ -215,6 +215,12 @@ The mapping is read from the main app's `package.json`; the per-SM policy is rea
 sidecar's own `package.json`, alongside the credential binding. The app's own HDI container in the
 sidecar must use the requires key `db` (see [Multi-tenant consumer](#multi-tenant-consumer)).
 
+Note the two roles the SM plays. The credential-bearing **binding** to the provider's Service
+Manager is the sidecar's `kind`/`vcap` entry together with the actual deployment binding (e.g. in
+_mta.yaml_ or via `cf bind-service`); this is what provides the credentials used to reach the
+provider's HDI container. The `synonyms.service-manager` **mapping** only links an imported CDS
+service to that SM by name - it carries no credentials itself.
+
 ### Connect state and resolution
 
 The connect state of a `deferred` SM is stored per SM in a registry table: a row means connected,
