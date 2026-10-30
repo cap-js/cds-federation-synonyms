@@ -181,7 +181,7 @@ of two kinds of entries, each living in its natural home:
   - `deferred` (default `false`): if `false`, the SM's synonyms are connected on every deployment
     (static control). If `true`, they start unconnected and are switched at runtime via the API.
   - `allow-api-provider-tenant` (default `false`): if `true`, a provider tenant supplied through
-    the API is honored; otherwise the provider's own tenant is used. Only meaningful for `deferred` SMs.
+    the API is honored; otherwise the consumer's own (deploying) tenant is used. Only meaningful for `deferred` SMs.
 
 ```jsonc
 // main app package.json - the service mapping (model intent)

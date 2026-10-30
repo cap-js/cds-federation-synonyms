@@ -15,7 +15,7 @@ service ConfigService {
   //     - sm must be statically declared (referenced by a service mapping) and configured as
   //       'deferred' (API-controlled); otherwise the call is rejected
   //     - provider_tenant is accepted only if the SM's static config sets
-  //       'allow-api-provider-tenant'; otherwise the deploying tenant is used
+  //       'allow-api-provider-tenant'; otherwise the own (deploying) tenant is used
   //   unconnect:
   //     - only deletes the SM's connect-state row (the safe direction); NOT gated by the allowlist /
   //       'deferred' flag, so it can also clean up stale rows left by a static-config change

@@ -8,8 +8,8 @@ namespace cds.dataproducts.synonyms;
 //   row present  -> SM is connected
 //   no row       -> SM is disconnected
 // provider_tenant is only stored when the SM's static config sets
-// 'allow-api-provider-tenant'; otherwise it stays null and the deploying tenant
-// (own tenant) is used.
+// 'allow-api-provider-tenant'; otherwise it stays null and the own (deploying)
+// tenant is used.
 entity Registry {
   key provider_service_manager : String(300);  // the service manager of the provider system
   provider_tenant              : String(300);  // tenant in the provider system (only if allowed by static config)
