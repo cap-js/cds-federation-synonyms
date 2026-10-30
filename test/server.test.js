@@ -137,14 +137,14 @@ describe('PlugIntoMtx - before deploy handler', () => {
       expect(fs.existsSync(path.join(outDir, `cfg/gen/${srv}.hdbsynonymconfig`))).to.be.true
       expect(fs.existsSync(path.join(outDir, `src/gen/${srv}.hdbgrants`))).to.be.true
 
-      // A service replacement should have been added (provider_tenant null → '-null-' in the vcap name)
+      // A service replacement should have been added (provider_tenant null → no tenant suffix in the vcap name)
       const replacements = JSON.parse(data.options._.hdi.deployEnv.SERVICE_REPLACEMENTS)
-      expect(replacements).to.deep.include({ key: srv, service: `${smName}-null-vcap` })
+      expect(replacements).to.deep.include({ key: srv, service: `${smName}-vcap` })
 
       // VCAP entry should have been added with the right name
       const vcap = data.options._.hdi.deployEnv.VCAP_SERVICES
       expect(vcap.hana).to.have.lengthOf(1)
-      expect(vcap.hana[0].name).to.equal(`${smName}-null-vcap`)
+      expect(vcap.hana[0].name).to.equal(`${smName}-vcap`)
       expect(vcap.hana[0].credentials).to.deep.equal(fakeCredentials)
     } finally {
       cleanupDir(outDir)
@@ -260,14 +260,14 @@ describe('PlugIntoMtx - before deploy handler', () => {
       expect(fs.existsSync(path.join(outDir, `cfg/gen/${srvNoConfig}.hdbsynonymconfig`))).to.be.false
       expect(fs.existsSync(path.join(outDir, `src/gen/${srvNoConfig}.hdbgrants`))).to.be.false
 
-      // Exactly one service replacement for the connected service (provider_tenant null → '-null-' vcap name)
+      // Exactly one service replacement for the connected service (provider_tenant null → no tenant suffix in vcap name)
       const replacements = JSON.parse(data.options._.hdi.deployEnv.SERVICE_REPLACEMENTS)
       expect(replacements).to.have.lengthOf(1)
-      expect(replacements[0]).to.deep.equal({ key: srvConnected, service: `${smConnected}-null-vcap` })
+      expect(replacements[0]).to.deep.equal({ key: srvConnected, service: `${smConnected}-vcap` })
 
       // Exactly one VCAP entry
       expect(data.options._.hdi.deployEnv.VCAP_SERVICES.hana).to.have.lengthOf(1)
-      expect(data.options._.hdi.deployEnv.VCAP_SERVICES.hana[0].name).to.equal(`${smConnected}-null-vcap`)
+      expect(data.options._.hdi.deployEnv.VCAP_SERVICES.hana[0].name).to.equal(`${smConnected}-vcap`)
     } finally {
       cleanupDir(outDir)
     }
@@ -311,12 +311,12 @@ describe('PlugIntoMtx - before deploy handler', () => {
       // provider_tenant is per-SM now → both services share a single VCAP entry, two replacements point at it
       const replacements = JSON.parse(data.options._.hdi.deployEnv.SERVICE_REPLACEMENTS)
       expect(replacements).to.have.lengthOf(2)
-      expect(replacements.find(r => r.key === srv1).service).to.equal(`${sm}-null-vcap`)
-      expect(replacements.find(r => r.key === srv2).service).to.equal(`${sm}-null-vcap`)
+      expect(replacements.find(r => r.key === srv1).service).to.equal(`${sm}-vcap`)
+      expect(replacements.find(r => r.key === srv2).service).to.equal(`${sm}-vcap`)
 
       const vcapHana = data.options._.hdi.deployEnv.VCAP_SERVICES.hana
       expect(vcapHana).to.have.lengthOf(1)
-      expect(vcapHana[0].name).to.equal(`${sm}-null-vcap`)
+      expect(vcapHana[0].name).to.equal(`${sm}-vcap`)
     } finally {
       cleanupDir(outDir)
     }

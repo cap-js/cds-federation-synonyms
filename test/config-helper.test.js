@@ -13,7 +13,7 @@ jest.mock('../lib/status-sql', () => ({
   ])
 }))
 
-const { getResolvedConfig, checkService, getSmConfig } = require('../lib/config-helper')
+const { getResolvedConfig, checkService, getSmConfig, validateConfig } = require('../lib/config-helper')
 
 // Boot in the project root so @cap-js/sqlite (nested under cds-dk) can be resolved
 cds.test().in(__dirname + '/..')
@@ -329,6 +329,71 @@ describe('getSmConfig()', () => {
     const result = getSmConfig()
     expect(Object.keys(result)).to.deep.equal(['sm-shared'])
     expect(result['sm-shared'].deferred).to.be.true
+  })
+
+})
+
+
+describe('validateConfig()', () => {
+
+  let warnSpy
+
+  beforeEach(() => {
+    cleanupRequires()
+    warnSpy = jest.spyOn(cds.log('cds-federation-synonyms'), 'warn').mockImplementation(() => {})
+  })
+
+  afterEach(() => warnSpy.mockRestore())
+
+  // collected warning messages as a single string for easy substring matching
+  function warnings() {
+    return warnSpy.mock.calls.map(args => args.join(' ')).join('\n')
+  }
+
+  it('emits no warning for a valid config', () => {
+    addSrvConfig('svc-a', 'sm-a')
+    addSmConfig('sm-a', { deferred: true, allowApiProviderTenant: true })
+    validateConfig()
+    expect(warnSpy.mock.calls.length).to.equal(0)
+  })
+
+  it('warns on an unrecognized key in a service mapping', () => {
+    cds.env.requires['svc-a'] = { synonyms: { 'service-manager': 'sm-a', 'typo-key': true } }
+    validateConfig()
+    expect(warnings()).to.match(/unrecognized key 'typo-key' in service mapping for 'svc-a'/)
+  })
+
+  it('warns on an unrecognized key in an SM policy entry', () => {
+    addSrvConfig('svc-a', 'sm-a')
+    cds.env.requires['sm-a'] = { synonyms: { deferred: true, 'bad-key': 1 } }
+    validateConfig()
+    expect(warnings()).to.match(/unrecognized key 'bad-key' in SM policy for 'sm-a'/)
+  })
+
+  it('warns when allow-api-provider-tenant is set on a non-deferred SM', () => {
+    addSrvConfig('svc-a', 'sm-a')
+    addSmConfig('sm-a', { allowApiProviderTenant: true })  // no deferred
+    validateConfig()
+    expect(warnings()).to.match(/'allow-api-provider-tenant' on SM 'sm-a' has no effect because 'deferred' is not set/)
+  })
+
+  it('does not warn when allow-api-provider-tenant is set on a deferred SM', () => {
+    addSrvConfig('svc-a', 'sm-a')
+    addSmConfig('sm-a', { deferred: true, allowApiProviderTenant: true })
+    validateConfig()
+    expect(warnings()).not.to.match(/allow-api-provider-tenant/)
+  })
+
+  it('warns on an orphaned synonyms block (neither mapping nor declared SM)', () => {
+    cds.env.requires['sm-orphan'] = { synonyms: { deferred: true } }
+    validateConfig()
+    expect(warnings()).to.match(/entry 'sm-orphan' has a 'synonyms' block but is neither a service mapping nor a declared SM/)
+  })
+
+  it('ignores requires entries without a synonyms block', () => {
+    cds.env.requires['svc-plain'] = { credentials: {} }
+    validateConfig()
+    expect(warnSpy.mock.calls.length).to.equal(0)
   })
 
 })
