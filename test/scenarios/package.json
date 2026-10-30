@@ -2,8 +2,8 @@
   "name": "cds-test-synonyms",
   "version": "1.0.0",
   "dependencies": {
-    "@sap/cds": "*",
-    "@cap-js/cds-federation-synonyms": "file:../.."
+    "@cap-js/cds-federation-synonyms": "file:../..",
+    "@sap/cds": "^10.2.1"
   },
   "cds": {
     "log": {
