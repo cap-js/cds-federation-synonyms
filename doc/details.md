@@ -197,27 +197,26 @@ we need to explicitly specify the `TARGET_CONTAINER` (in _.env_ or in _mta.yaml_
 
 ### Multi-tenant consumer
 
-For multi tenant apps, the plugin provides an API to switch during runtime.
-This API is exposed on the MTX sidecar only (`/-/cds/synonymapi`); the operator
-calls it with an `internal-user` token. There is no runtime config API on the
-application itself.
-
-
-
 For the deployment, the consumer app needs to be bound to the provider's service manager.
 Deployment and tenant subscription are not different from any other CAP application.
-Whether an imported service's synonyms are connected on deployment depends on the static config of
-its provider service manager (SM): a plain SM mapping connects on every deployment, while an SM
-marked `deferred` starts in "unconnected" state (local mock tables) until connected via the API.
+In `mtx/sidecar/package.json`, the app's own HDI container (or service manager) binding must use
+the requires key `db` -- MTX uses this key to identify its deploy target, and with multiple HANA
+bindings present the key must be unambiguous.
 
-> **Security:** this Service Manager binding is not limited to the single provider container
+> **Security:** the binding to the provider's Service Manager is not limited to the single provider container
 > used for federation - it exposes credentials for *all* HDI containers under that Service
 > Manager. Provider and consumer must therefore be deployed within the same trust boundary.
 > See [Security considerations](../README.md#security-considerations).
 
-Once tenant subscription has happened for a provider and consumer, the synonyms of a `deferred`
-service manager can be connected via the MTX sidecar API provided by the plugin. The API operates
-per service manager - `connect`/`unconnect` affect all imported services mapped to that SM together.
-See [walkthrough](walkthrough.md).
+The mapping of imported services to their provider SM is given as static configuration (see [Configuration](../README.md#configuration)).
+By default, a plain SM mapping connects synonyms on every deployment. If an SM is marked `deferred`
+in the static config, its synonyms start in "unconnected" state (local mock tables) and must be
+switched at runtime via the API.
+
+For `deferred` service managers, the plugin exposes an API on the MTX sidecar (`/-/cds/synonymapi`).
+The operator calls it with an `internal-user` token; there is no runtime config API on the
+application itself. The API operates per service manager -- `connect`/`unconnect` affect all
+imported services mapped to that SM together.
 After calling the API, a tenant update must be explicitly triggered (or requested
 inline via `triggerUpgrade`).
+See [walkthrough](walkthrough.md).

@@ -393,7 +393,9 @@ to bind to the HANA service manager of xflights and to ensure that we deploy to 
   }
 ```
 
-Note: The entry for the HDI container where we want to deploy to _must_ have the name `db`.
+Note: The entry for the app's own HDI container (or service manager) _must_ use the requires key `db`.
+MTX identifies its deploy target by this key -- with multiple HANA bindings present (own container plus
+provider SM), any other name would be ambiguous.
 
 xtravels-mtx needs to be bound to xflights-db. This can be done either statically via _mta.yaml_,
 or dynamically after the deployment. Dynamic binding is necessary when you can't control the

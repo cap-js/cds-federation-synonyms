@@ -31,7 +31,8 @@ to learn about the basics.
   mutual trust). See [Security considerations](#security-considerations) for why this is
   required. Deploying them across different trust boundaries is **not supported**.
 
-The plugin uses two components which are under SAP properity licesenses. You need to review and accept them if you consume the plugin:
+The plugin uses two components which are under SAP proprietary licenses.
+You need to review and accept them if you consume the plugin:
 * [@sap/hdi](https://www.npmjs.com/package/@sap/hdi)
 * [@sap/xssec](https://www.npmjs.com/package/@sap/xssec)
 
@@ -54,14 +55,15 @@ For more information on API packages, see
 ### Consumer
 
 Import the API package, define consumption views on top of the imported entities and use them
-in your app's CDS model as described in
+in your app's CDS model, as described in
 [CAP-level Data Federation](https://pages.github.tools.sap/cap/docs/guides/integration/data-federation#cap-level-data-federation).
 
 On HANA, the entities in the imported data service are represented by synonyms that can either point to
 local mock tables (synonyms are "unconnected"), or to the respective tables/views in the provider app (synonyms are "connected").
 
-The choice between connected and unconnected is made per provider service manager (SM): all CDS
-services that are mapped to the same SM are connected or disconnected together.
+The choice between connected and unconnected is made per provider HDI container instance in a single-tenant app,
+or per provider service manager (SM) in a multi-tenant app: all CDS
+services that are mapped to the same HDI container instance (or SM) are connected or disconnected together.
 For a single tenant app, it is a deployment decision. For a multi tenant app, the mapping of
 imported services to their provider SM is given as static configuration; whether an SM's synonyms
 are connected is then either fixed by that static config (connected on every deployment) or, if the
@@ -112,9 +114,6 @@ in the producer app ("connected").
 ### Walkthrough
 
 For a detailed example, go to [Walkthrough](./doc/walkthrough.md).
-
-
-
 
 
 ## Security considerations
