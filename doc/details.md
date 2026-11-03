@@ -280,6 +280,48 @@ otherwise `connect` rejects any non-null `providerTenant` (HTTP 422).
 > caller-supplied tenant is accepted at all.
 
 
+## Audit logging
+
+The security-critical `connect` / `unconnect` actions are recorded in the SAP Audit Log Service
+via the [`@cap-js/audit-logging`](https://github.com/cap-js/audit-logging) plugin:
+
+- a successful `connect` / `unconnect` emits a `ConfigurationModified` event with the affected
+  service manager and the before/after `provider_service_manager` / `provider_tenant`;
+- a rejected `connect` (unknown SM, statically-controlled SM, or a disallowed `provider_tenant`)
+  emits a `SecurityEvent` recording the attempt.
+
+This is only relevant for `deferred` SMs (the ones the API can connect/unconnect).
+
+### Enabling it
+
+A plugin cannot add a dependency or a binding to the host app, so each consumer wires the audit
+log into its MTX sidecar:
+
+1. add `@cap-js/audit-logging` to the sidecar's dependencies (`mtx/sidecar/package.json`);
+2. bind an SAP Audit Log Service instance (service `auditlog`) to the sidecar module in `mta.yaml`.
+
+In development (no binding) the plugin logs to the console; in production it writes to the bound
+service. The `test/e2e/xtravels*` sample apps show a complete setup. To exercise the flow in a
+deployed app *without* provisioning the service, set the sidecar's audit-log kind to
+`audit-log-to-console` (`cds.requires['audit-log'].kind`); entries then go to the application log.
+The console target is for development only and is not a durable, tamper-proof audit trail.
+
+### No audit, no action
+
+Audit logging is mandatory for these operations: if no audit log target is configured or
+reachable, `connect` / `unconnect` are **rejected** (HTTP 503) rather than performed unaudited.
+Read-only actions (`getConfig`, `check`, status) are unaffected, and an app with no `deferred` SM
+does not need the audit log at all.
+
+### What is recorded
+
+Entries are written to the **provider account's** audit log (the subaccount that hosts the app and
+the audit log binding); the affected consumer tenant is preserved in the event's object id. The
+recorded actor is the **technical client** of the caller - the API requires the `internal-user`
+role and is called with a service token, so the entry identifies the calling client, not an
+individual person.
+
+
 ## Deploy to HANA
 
 ### Provider

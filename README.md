@@ -165,6 +165,15 @@ its own provider data (see [Configuration](./doc/details.md#the-provider_tenant-
 it only for tenant pairings that are legitimate and within the shared trust boundary described
 above, and restrict access to the `internal-user`-protected API accordingly.
 
+### Audit logging
+
+The `connect` / `unconnect` actions decide which provider data a consumer tenant can reach, so
+they are recorded in the SAP Audit Log Service (successful changes as `ConfigurationModified`,
+rejected attempts as `SecurityEvent`). Audit logging is **mandatory**: if no audit log is
+configured or reachable, these actions are rejected (HTTP 503) rather than performed unaudited.
+The recorded actor is the technical client of the caller (the API requires the `internal-user`
+role), not a named person. See [Audit logging](./doc/details.md#audit-logging) for the setup.
+
 ## Support, Feedback, Contributing
 
 This project is open to feature requests/suggestions, bug reports etc. via [GitHub issues](https://github.com/cap-js/cds-federation-synonyms/issues). Contribution and feedback are encouraged and always welcome. For more information about how to contribute, the project structure, as well as additional contribution information, see our [Contribution Guidelines](CONTRIBUTING.md).

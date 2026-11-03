@@ -491,6 +491,10 @@ files) until you connect them via the MTX sidecar `synonymapi` in xtravels-mtx. 
 operate on the whole service manager - all imported services mapped to it (here
 `sap.capire.flights.FlightsService_syn`) are switched together.
 
+
+Note: In order to use the `connect`/`unconnect` functions of `synonymapi`, audit log must be configured.
+See [Audit logging](details.md#audit-logging).
+
 Note: The requests shown here are lacking authorization details. See [the test README](../test/README.md) for
 more info on tokens and [complete example requests](../test/syn-config.http).
 
