@@ -301,10 +301,7 @@ log into its MTX sidecar:
 2. bind an SAP Audit Log Service instance (service `auditlog`) to the sidecar module in `mta.yaml`.
 
 In development (no binding) the plugin logs to the console; in production it writes to the bound
-service. The `test/e2e/xtravels*` sample apps show a complete setup. To exercise the flow in a
-deployed app *without* provisioning the service, set the sidecar's audit-log kind to
-`audit-log-to-console` (`cds.requires['audit-log'].kind`); entries then go to the application log.
-The console target is for development only and is not a durable, tamper-proof audit trail.
+service. The `test/e2e/xtravels*` sample apps show a complete setup.
 
 ### No audit, no action
 
@@ -320,6 +317,24 @@ the audit log binding); the affected consumer tenant is preserved in the event's
 recorded actor is the **technical client** of the caller - the API requires the `internal-user`
 role and is called with a service token, so the entry identifies the calling client, not an
 individual person.
+
+### Testing without the real service
+
+To test the audit flow locally or in a deployed app without provisioning an SAP Audit Log Service
+instance, set the sidecar's audit-log kind to `audit-log-to-console`:
+
+```json
+// mtx/sidecar/.cdsrc.json  (or package.json cds block)
+{
+  "requires": {
+    "audit-log": { "kind": "audit-log-to-console" }
+  }
+}
+```
+
+With this setting the plugin writes entries to the application log instead of a durable service.
+The `connect` / `unconnect` operations proceed normally, so you can verify the full flow end-to-end.
+Note that `audit-log-to-console` is for development only and is **not** a tamper-proof audit trail.
 
 
 ## Deploy to HANA
