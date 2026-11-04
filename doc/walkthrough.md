@@ -500,7 +500,7 @@ POST {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/connect
 
 {
   "tenant": "{{tenant_id}}",
-  "sm": "xflights-db",
+  "providerServiceManager": "xflights-db",
   "triggerUpgrade": true
 }
 ```
@@ -513,7 +513,7 @@ POST {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/unconnect
 
 {
   "tenant": "{{tenant_id}}",
-  "sm": "xflights-db",
+  "providerServiceManager": "xflights-db",
   "triggerUpgrade": true
 }
 ```
@@ -527,7 +527,7 @@ POST {{mtx_host_name}}.{{domain_name}}/-/cds/synonymapi/check
 
 {
   "tenant": "{{tenant_id}}",
-  "srv": "sap.capire.flights.FlightsService_syn"
+  "service": "sap.capire.flights.FlightsService_syn"
 }
 ```
 

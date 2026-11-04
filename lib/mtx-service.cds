@@ -12,16 +12,16 @@ service ConfigService {
   // intent; it takes effect on the next tenant deploy (best-effort: a service stays unconnected if no
   // SM credentials / provider container are found). Pass triggerUpgrade to apply it immediately.
   //   connect:
-  //     - sm must be statically declared (referenced by a service mapping) and configured as
+  //     - providerServiceManager must be statically declared (referenced by a service mapping) and configured as
   //       dynamically connected ('connect_mode: dynamic'); otherwise the call is rejected
-  //     - provider_tenant is accepted only if the SM's static config sets
+  //     - providerTenant is accepted only if the SM's static config sets
   //       'allow-api-provider-tenant'; otherwise the own (deploying) tenant is used
   //   unconnect:
   //     - only deletes the SM's connect-state row (the safe direction); NOT gated by the allowlist /
   //       connect_mode, so it can also clean up stale rows left by a static-config change
-  action connect  (tenant:String, sm: String, provider_tenant: String, triggerUpgrade: Boolean) returns String;
-  action unconnect(tenant:String, sm: String,                          triggerUpgrade: Boolean) returns String;
-  action check    (tenant:String, srv: String)           returns String;
+  action connect  (tenant: String, providerServiceManager: String, providerTenant: String, triggerUpgrade: Boolean) returns String;
+  action unconnect(tenant: String, providerServiceManager: String,                         triggerUpgrade: Boolean) returns String;
+  action check    (tenant: String, service: String)          returns String;
 
   @readonly @cds.persistence.skip
   entity Status (tenant: String) {

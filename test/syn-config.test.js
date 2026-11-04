@@ -63,19 +63,19 @@ if (!env) {
     }
 
     async function check() {
-      const { status, body } = await post('check', { tenant: tenant_id, srv: SRV })
+      const { status, body } = await post('check', { tenant: tenant_id, service: SRV })
       expect(status).toBe(200)
       return JSON.parse(body)
     }
 
     async function connect() {
-      const { status, body } = await post('connect', { tenant: tenant_id, sm: PROVIDER_SERVICE_MANAGER, triggerUpgrade: TRIGGER_UPGRADE })
+      const { status, body } = await post('connect', { tenant: tenant_id, providerServiceManager: PROVIDER_SERVICE_MANAGER, triggerUpgrade: TRIGGER_UPGRADE })
       expect(status).toBe(200)
       return body
     }
 
     async function unconnect() {
-      const { status, body } = await post('unconnect', { tenant: tenant_id, sm: PROVIDER_SERVICE_MANAGER, triggerUpgrade: TRIGGER_UPGRADE })
+      const { status, body } = await post('unconnect', { tenant: tenant_id, providerServiceManager: PROVIDER_SERVICE_MANAGER, triggerUpgrade: TRIGGER_UPGRADE })
       expect(status).toBe(200)
       return body
     }
@@ -209,17 +209,17 @@ if (!env) {
     describe('mtx synonymapi - connect rejections (security)', () => {
 
       it('rejects an SM that is not statically declared', async () => {
-        const { status, body } = await post('connect', { tenant: tenant_id, sm: 'does-not-exist' })
+        const { status, body } = await post('connect', { tenant: tenant_id, providerServiceManager: 'does-not-exist' })
         console.log('connect unknown sm:', status, body)
         expect(status).toBe(422)
         expect(body).toMatch(/unknown service manager/)
       })
 
-      it('rejects a provider_tenant when allow-api-provider-tenant is not set', async () => {
-        const { status, body } = await post('connect', { tenant: tenant_id, sm: PROVIDER_SERVICE_MANAGER, provider_tenant: tenant_id })
-        console.log('connect with provider_tenant:', status, body)
+      it('rejects a providerTenant when allow-api-provider-tenant is not set', async () => {
+        const { status, body } = await post('connect', { tenant: tenant_id, providerServiceManager: PROVIDER_SERVICE_MANAGER, providerTenant: tenant_id })
+        console.log('connect with providerTenant:', status, body)
         expect(status).toBe(422)
-        expect(body).toMatch(/provider_tenant not allowed/)
+        expect(body).toMatch(/providerTenant not allowed/)
       })
 
     })

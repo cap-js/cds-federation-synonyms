@@ -78,37 +78,37 @@ describe('ConfigService.connect', () => {
 
   it('rejects when the tenant parameter is missing', async () => {
     addSmConfig('sm-a', { connect_mode: 'dynamic' }); addSrvConfig('svc-a', 'sm-a')
-    await expectReject('connect', { sm: 'sm-a' }, 'tenant parameter missing')
+    await expectReject('connect', { providerServiceManager: 'sm-a' }, 'tenant parameter missing')
   })
 
   it('rejects an unknown tenant', async () => {
     addSmConfig('sm-a', { connect_mode: 'dynamic' }); addSrvConfig('svc-a', 'sm-a')
-    await expectReject('connect', { tenant: 't-unknown', sm: 'sm-a' }, 'tenant not found')
+    await expectReject('connect', { tenant: 't-unknown', providerServiceManager: 'sm-a' }, 'tenant not found')
   })
 
   it('rejects an SM that is not statically declared (allowlist)', async () => {
-    await expectReject('connect', { tenant: 't1', sm: 'sm-unknown' }, 'unknown service manager')
+    await expectReject('connect', { tenant: 't1', providerServiceManager: 'sm-unknown' }, 'unknown service manager')
     const result = await rows()
     expect(result).to.have.lengthOf(0)
   })
 
   it('rejects a statically connected SM', async () => {
     addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'static' })
-    await expectReject('connect', { tenant: 't1', sm: 'sm-a' }, 'statically controlled')
+    await expectReject('connect', { tenant: 't1', providerServiceManager: 'sm-a' }, 'statically controlled')
     const result = await rows()
     expect(result).to.have.lengthOf(0)
   })
 
   it('rejects a provider_tenant when allow-api-provider-tenant is not set', async () => {
     addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
-    await expectReject('connect', { tenant: 't1', sm: 'sm-a', provider_tenant: 'pt1' }, 'provider_tenant not allowed')
+    await expectReject('connect', { tenant: 't1', providerServiceManager: 'sm-a', providerTenant: 'pt1' }, 'providerTenant not allowed')
     const result = await rows()
     expect(result).to.have.lengthOf(0)
   })
 
   it('connects a dynamically connected SM: writes a row, no provider_tenant, no upgrade by default', async () => {
     addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
-    await call('connect', { tenant: 't1', sm: 'sm-a' })
+    await call('connect', { tenant: 't1', providerServiceManager: 'sm-a' })
     const result = await rows()
     expect(result).to.have.lengthOf(1)
     expect(result[0].provider_service_manager).to.equal('sm-a')
@@ -118,7 +118,7 @@ describe('ConfigService.connect', () => {
 
   it('stores the provider_tenant when allowed and triggers an upgrade on request', async () => {
     addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic', allowApiProviderTenant: true })
-    await call('connect', { tenant: 't1', sm: 'sm-a', provider_tenant: 'pt1', triggerUpgrade: true })
+    await call('connect', { tenant: 't1', providerServiceManager: 'sm-a', providerTenant: 'pt1', triggerUpgrade: true })
     const result = await rows()
     expect(result).to.have.lengthOf(1)
     expect(result[0].provider_tenant).to.equal('pt1')
@@ -127,8 +127,8 @@ describe('ConfigService.connect', () => {
 
   it('connect is idempotent (upsert) for the same SM', async () => {
     addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic', allowApiProviderTenant: true })
-    await call('connect', { tenant: 't1', sm: 'sm-a' })
-    await call('connect', { tenant: 't1', sm: 'sm-a', provider_tenant: 'pt2' })
+    await call('connect', { tenant: 't1', providerServiceManager: 'sm-a' })
+    await call('connect', { tenant: 't1', providerServiceManager: 'sm-a', providerTenant: 'pt2' })
     const result = await rows()
     expect(result).to.have.lengthOf(1)
     expect(result[0].provider_tenant).to.equal('pt2')
@@ -139,14 +139,14 @@ describe('ConfigService.connect', () => {
 
 describe('ConfigService.unconnect', () => {
 
-  it('rejects when the sm parameter is missing', async () => {
-    await expectReject('unconnect', { tenant: 't1' }, 'sm parameter missing')
+  it('rejects when the providerServiceManager parameter is missing', async () => {
+    await expectReject('unconnect', { tenant: 't1' }, 'providerServiceManager parameter missing')
   })
 
   it('clears a stale row for an SM that is no longer statically declared (cleanup)', async () => {
     // no static config for sm-stale -> connect would reject it, but unconnect must still clean it up
     await INSERT.into(REG).entries({ provider_service_manager: 'sm-stale', provider_tenant: null })
-    await call('unconnect', { tenant: 't1', sm: 'sm-stale' })
+    await call('unconnect', { tenant: 't1', providerServiceManager: 'sm-stale' })
     const result = await rows()
     expect(result).to.have.lengthOf(0)
   })
@@ -154,7 +154,7 @@ describe('ConfigService.unconnect', () => {
   it('clears a stale row for a statically connected SM (cleanup)', async () => {
     addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'static' })
     await INSERT.into(REG).entries({ provider_service_manager: 'sm-a', provider_tenant: null })
-    await call('unconnect', { tenant: 't1', sm: 'sm-a' })
+    await call('unconnect', { tenant: 't1', providerServiceManager: 'sm-a' })
     const result = await rows()
     expect(result).to.have.lengthOf(0)
   })
@@ -162,14 +162,14 @@ describe('ConfigService.unconnect', () => {
   it('deletes the row for a dynamically connected SM', async () => {
     addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
     await INSERT.into(REG).entries({ provider_service_manager: 'sm-a', provider_tenant: null })
-    await call('unconnect', { tenant: 't1', sm: 'sm-a' })
+    await call('unconnect', { tenant: 't1', providerServiceManager: 'sm-a' })
     const result = await rows()
     expect(result).to.have.lengthOf(0)
   })
 
   it('is idempotent when no row exists, and triggers upgrade on request', async () => {
     addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
-    await call('unconnect', { tenant: 't1', sm: 'sm-a', triggerUpgrade: true })
+    await call('unconnect', { tenant: 't1', providerServiceManager: 'sm-a', triggerUpgrade: true })
     const result = await rows()
     expect(result).to.have.lengthOf(0)
     expect(ds.upgradeCalls).to.deep.equal(['t1'])
@@ -190,7 +190,7 @@ describe('ConfigService config round-trip (set via API, read back via getConfig)
 
   it('getConfig reflects a connect', async () => {
     addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
-    await call('connect', { tenant: 't1', sm: 'sm-a' })
+    await call('connect', { tenant: 't1', providerServiceManager: 'sm-a' })
     const config = await getConfig()
     expect(config).to.deep.equal([
       { srv: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'dynamic' }
@@ -199,7 +199,7 @@ describe('ConfigService config round-trip (set via API, read back via getConfig)
 
   it('getConfig reflects the provider_tenant when allowed', async () => {
     addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic', allowApiProviderTenant: true })
-    await call('connect', { tenant: 't1', sm: 'sm-a', provider_tenant: 'pt1' })
+    await call('connect', { tenant: 't1', providerServiceManager: 'sm-a', providerTenant: 'pt1' })
     const config = await getConfig()
     expect(config).to.deep.equal([
       { srv: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: 'pt1', connect_mode: 'dynamic' }
@@ -208,8 +208,8 @@ describe('ConfigService config round-trip (set via API, read back via getConfig)
 
   it('getConfig reflects an unconnect (back to disconnected)', async () => {
     addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
-    await call('connect', { tenant: 't1', sm: 'sm-a' })
-    await call('unconnect', { tenant: 't1', sm: 'sm-a' })
+    await call('connect', { tenant: 't1', providerServiceManager: 'sm-a' })
+    await call('unconnect', { tenant: 't1', providerServiceManager: 'sm-a' })
     const config = await getConfig()
     expect(config).to.deep.equal([
       { srv: 'svc-a', provider_service_manager: null, provider_tenant: null, connect_mode: 'dynamic' }
@@ -219,7 +219,7 @@ describe('ConfigService config round-trip (set via API, read back via getConfig)
   it('getConfig connects all services of the SM together', async () => {
     addSrvConfig('svc-a', 'sm-shared'); addSrvConfig('svc-b', 'sm-shared')
     addSmConfig('sm-shared', { connect_mode: 'dynamic' })
-    await call('connect', { tenant: 't1', sm: 'sm-shared' })
+    await call('connect', { tenant: 't1', providerServiceManager: 'sm-shared' })
     const config = (await getConfig()).sort((a, b) => a.srv.localeCompare(b.srv))
     expect(config[0]).to.deep.equal(
       { srv: 'svc-a', provider_service_manager: 'sm-shared', provider_tenant: null, connect_mode: 'dynamic' })
