@@ -48,7 +48,7 @@ Authorization: Bearer {{mtx_token}}
 
 {
   "tenant": "{{tenant_id}}",
-  "srv": "sap.capire.flights.FlightsService_syn"
+  "service": "sap.capire.flights.FlightsService_syn"
 }
 
 ###
@@ -58,7 +58,7 @@ Authorization: Bearer {{mtx_token}}
 
 {
   "tenant": "{{tenant_id}}",
-  "sm": "xflights-db",
+  "providerServiceManager": "xflights-db",
   "triggerUpgrade": true
 }
 
@@ -69,7 +69,7 @@ Authorization: Bearer {{mtx_token}}
 
 {
   "tenant": "{{tenant_id}}",
-  "sm": "xflights-db",
+  "providerServiceManager": "xflights-db",
   "triggerUpgrade": true
 }
 

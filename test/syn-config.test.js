@@ -108,7 +108,7 @@ if (!env) {
       it('getConfig (2) - after connect', async () => {
         const config = await getConfig()
         expect(Array.isArray(config)).toBe(true)
-        const entry = config.find(e => e.srv === SRV)
+        const entry = config.find(e => e.service === SRV)
         expect(entry).toBeDefined()
         expect(entry.provider_service_manager).toBe(PROVIDER_SERVICE_MANAGER)
         expect(entry.provider_tenant).toBe(null)
@@ -118,7 +118,7 @@ if (!env) {
       it('check (2) - after connect', async () => {
         const result = await check()
         console.log('check (2):', result)
-        expect(result['service-manager']).toBe(PROVIDER_SERVICE_MANAGER)
+        expect(result['providerServiceManager']).toBe(PROVIDER_SERVICE_MANAGER)
         expect(result['connected']).toBe(true)
         if (TRIGGER_UPGRADE) {
           const { nConnected, nUnconnected } = parseSynonyms(result.synonyms)
@@ -136,7 +136,7 @@ if (!env) {
       it('getConfig (3) - after connect (idempotent)', async () => {
         const config = await getConfig()
         expect(Array.isArray(config)).toBe(true)
-        const entries = config.filter(e => e.srv === SRV)
+        const entries = config.filter(e => e.service === SRV)
         expect(entries).toHaveLength(1)
         expect(entries[0].provider_service_manager).toBe(PROVIDER_SERVICE_MANAGER)
         console.log('getConfig (3):', JSON.stringify(config, null, 2))
@@ -162,7 +162,7 @@ if (!env) {
       it('getConfig (4) - after unconnect', async () => {
         const config = await getConfig()
         expect(Array.isArray(config)).toBe(true)
-        const entry = config.find(e => e.srv === SRV)
+        const entry = config.find(e => e.service === SRV)
         expect(entry).toBeDefined()
         expect(entry.provider_service_manager).toBeNull()
         console.log('getConfig (4):', JSON.stringify(config, null, 2))
@@ -187,7 +187,7 @@ if (!env) {
       it('getConfig (5) - after unconnect (idempotent)', async () => {
         const config = await getConfig()
         expect(Array.isArray(config)).toBe(true)
-        const entry = config.find(e => e.srv === SRV)
+        const entry = config.find(e => e.service === SRV)
         expect(entry.provider_service_manager).toBeNull()
         console.log('getConfig (5):', JSON.stringify(config, null, 2))
       })

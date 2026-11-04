@@ -35,7 +35,7 @@
           "name": "xflights-db"
         },
         "synonyms": {
-          "deferred": true
+          "connect_mode": "dynamic"
         }
       }
     }

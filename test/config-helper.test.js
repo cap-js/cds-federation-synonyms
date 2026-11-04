@@ -85,7 +85,7 @@ describe('getResolvedConfig()', () => {
       addSmConfig('sm-a')  // no connect_mode
       const result = await getResolvedConfig()
       expect(result).to.deep.equal([
-        { srv: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'static' }
+        { service: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'static' }
       ])
     })
 
@@ -94,7 +94,7 @@ describe('getResolvedConfig()', () => {
       // no cds.env.requires['sm-a']
       const result = await getResolvedConfig()
       expect(result).to.deep.equal([
-        { srv: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'static' }
+        { service: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'static' }
       ])
     })
 
@@ -104,7 +104,7 @@ describe('getResolvedConfig()', () => {
       await writeConfigTable('sm-a', 'prov-t1')  // allow-api-provider-tenant is off -> tenant ignored anyway
       const result = await getResolvedConfig()
       expect(result).to.deep.equal([
-        { srv: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'static' }
+        { service: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'static' }
       ])
     })
 
@@ -115,7 +115,7 @@ describe('getResolvedConfig()', () => {
       await writeConfigTable('sm-a', 'prov-t1')
       const result = await getResolvedConfig()
       expect(result).to.deep.equal([
-        { srv: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'static' }
+        { service: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'static' }
       ])
     })
 
@@ -123,11 +123,11 @@ describe('getResolvedConfig()', () => {
       addSrvConfig('svc-a', 'sm-shared')
       addSrvConfig('svc-b', 'sm-shared')
       addSmConfig('sm-shared')
-      const result = (await getResolvedConfig()).sort((a, b) => a.srv.localeCompare(b.srv))
+      const result = (await getResolvedConfig()).sort((a, b) => a.service.localeCompare(b.service))
       expect(result[0]).to.deep.equal(
-        { srv: 'svc-a', provider_service_manager: 'sm-shared', provider_tenant: null, connect_mode: 'static' })
+        { service: 'svc-a', provider_service_manager: 'sm-shared', provider_tenant: null, connect_mode: 'static' })
       expect(result[1]).to.deep.equal(
-        { srv: 'svc-b', provider_service_manager: 'sm-shared', provider_tenant: null, connect_mode: 'static' })
+        { service: 'svc-b', provider_service_manager: 'sm-shared', provider_tenant: null, connect_mode: 'static' })
     })
 
   })
@@ -140,7 +140,7 @@ describe('getResolvedConfig()', () => {
       addSmConfig('sm-a', { connect_mode: 'dynamic' })
       const result = await getResolvedConfig()
       expect(result).to.deep.equal([
-        { srv: 'svc-a', provider_service_manager: null, provider_tenant: null, connect_mode: 'dynamic' }
+        { service: 'svc-a', provider_service_manager: null, provider_tenant: null, connect_mode: 'dynamic' }
       ])
     })
 
@@ -150,7 +150,7 @@ describe('getResolvedConfig()', () => {
       await writeConfigTable('sm-a')
       const result = await getResolvedConfig()
       expect(result).to.deep.equal([
-        { srv: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'dynamic' }
+        { service: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'dynamic' }
       ])
     })
 
@@ -160,19 +160,19 @@ describe('getResolvedConfig()', () => {
       addSmConfig('sm-shared', { connect_mode: 'dynamic' })
 
       // no table row yet -> all services of the SM are disconnected
-      const before = (await getResolvedConfig()).sort((a, b) => a.srv.localeCompare(b.srv))
+      const before = (await getResolvedConfig()).sort((a, b) => a.service.localeCompare(b.service))
       expect(before[0]).to.deep.equal(
-        { srv: 'svc-a', provider_service_manager: null, provider_tenant: null, connect_mode: 'dynamic' })
+        { service: 'svc-a', provider_service_manager: null, provider_tenant: null, connect_mode: 'dynamic' })
       expect(before[1]).to.deep.equal(
-        { srv: 'svc-b', provider_service_manager: null, provider_tenant: null, connect_mode: 'dynamic' })
+        { service: 'svc-b', provider_service_manager: null, provider_tenant: null, connect_mode: 'dynamic' })
 
       // adding the row connects all services of the SM together
       await writeConfigTable('sm-shared')
-      const after = (await getResolvedConfig()).sort((a, b) => a.srv.localeCompare(b.srv))
+      const after = (await getResolvedConfig()).sort((a, b) => a.service.localeCompare(b.service))
       expect(after[0]).to.deep.equal(
-        { srv: 'svc-a', provider_service_manager: 'sm-shared', provider_tenant: null, connect_mode: 'dynamic' })
+        { service: 'svc-a', provider_service_manager: 'sm-shared', provider_tenant: null, connect_mode: 'dynamic' })
       expect(after[1]).to.deep.equal(
-        { srv: 'svc-b', provider_service_manager: 'sm-shared', provider_tenant: null, connect_mode: 'dynamic' })
+        { service: 'svc-b', provider_service_manager: 'sm-shared', provider_tenant: null, connect_mode: 'dynamic' })
     })
 
   })
@@ -186,7 +186,7 @@ describe('getResolvedConfig()', () => {
       await writeConfigTable('sm-a', 'prov-t1')
       const result = await getResolvedConfig()
       expect(result[0]).to.deep.equal(
-        { srv: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: 'prov-t1', connect_mode: 'dynamic' }
+        { service: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: 'prov-t1', connect_mode: 'dynamic' }
       )
     })
 
@@ -196,7 +196,7 @@ describe('getResolvedConfig()', () => {
       await writeConfigTable('sm-a', 'prov-t1')
       const result = await getResolvedConfig()
       expect(result).to.deep.equal([
-        { srv: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'dynamic' }
+        { service: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'dynamic' }
       ])
     })
 
@@ -206,7 +206,7 @@ describe('getResolvedConfig()', () => {
       await writeConfigTable('sm-a')  // row present, but no provider_tenant
       const result = await getResolvedConfig()
       expect(result).to.deep.equal([
-        { srv: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'dynamic' }
+        { service: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'dynamic' }
       ])
     })
 
@@ -225,10 +225,10 @@ describe('checkService()', () => {
   it('reports an unmapped service', async () => {
     const result = await checkService('svc-a')
     expect(result).to.deep.equal({
-      'service-manager': 'not mapped',
-      'connect-mode':    'n/a',
+      'providerServiceManager': 'not mapped',
+      'connectMode':    'n/a',
       'connected':       false,
-      'provider-tenant': 'n/a',
+      'providerTenant': 'n/a',
       'synonyms':        '0 connected, 0 unconnected'
     })
   })
@@ -238,10 +238,10 @@ describe('checkService()', () => {
     addSmConfig('sm-a')
     const result = await checkService('svc-a')
     expect(result).to.deep.equal({
-      'service-manager': 'sm-a',
-      'connect-mode':    'static',
+      'providerServiceManager': 'sm-a',
+      'connectMode':    'static',
       'connected':       true,
-      'provider-tenant': 'own tenant',
+      'providerTenant': 'own tenant',
       'synonyms':        '0 connected, 0 unconnected'
     })
   })
@@ -251,10 +251,10 @@ describe('checkService()', () => {
     addSmConfig('sm-a', { connect_mode: 'dynamic' })
     const result = await checkService('svc-a')
     expect(result).to.deep.equal({
-      'service-manager': 'sm-a',
-      'connect-mode':    'dynamic',
+      'providerServiceManager': 'sm-a',
+      'connectMode':    'dynamic',
       'connected':       false,
-      'provider-tenant': 'n/a',
+      'providerTenant': 'n/a',
       'synonyms':        '0 connected, 0 unconnected'
     })
   })
@@ -265,10 +265,10 @@ describe('checkService()', () => {
     await writeConfigTable('sm-a', 'prov-t1')
     const result = await checkService('svc-a')
     expect(result).to.deep.equal({
-      'service-manager': 'sm-a',
-      'connect-mode':    'dynamic',
+      'providerServiceManager': 'sm-a',
+      'connectMode':    'dynamic',
       'connected':       true,
-      'provider-tenant': 'prov-t1',
+      'providerTenant': 'prov-t1',
       'synonyms':        '0 connected, 0 unconnected'
     })
   })
@@ -279,10 +279,10 @@ describe('checkService()', () => {
     await writeConfigTable('sm-a', 'prov-t1')
     const result = await checkService('svc-a')
     expect(result).to.deep.equal({
-      'service-manager': 'sm-a',
-      'connect-mode':    'dynamic',
+      'providerServiceManager': 'sm-a',
+      'connectMode':    'dynamic',
       'connected':       true,
-      'provider-tenant': 'own tenant',
+      'providerTenant': 'own tenant',
       'synonyms':        '0 connected, 0 unconnected'
     })
   })
