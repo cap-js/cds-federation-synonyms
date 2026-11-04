@@ -178,10 +178,10 @@ of two kinds of entries, each living in its natural home:
   `package.json`. Only services with such a mapping can ever be connected.
 - **SM policy** - optional per-SM settings, placed under `synonyms` on the SM's credential-binding
   entry in the **sidecar's** `mtx/sidecar/package.json` (next to its `kind`/`vcap`):
-  - `deferred` (default `false`): if `false`, the SM's synonyms are connected on every deployment
-    (static control). If `true`, they start unconnected and are switched at runtime via the API.
+  - `connect_mode` (default `'static'`): if `'static'` or absent, the SM's synonyms are connected on every deployment
+    (static control). If `'dynamic'`, they start unconnected and are switched at runtime via the API.
   - `allow-api-provider-tenant` (default `false`): if `true`, a provider tenant supplied through
-    the API is honored; otherwise the consumer's own (deploying) tenant is used. Only meaningful for `deferred` SMs.
+    the API is honored; otherwise the consumer's own (deploying) tenant is used. Only meaningful for dynamically connected SMs.
 
 ```jsonc
 // main app package.json - the service mapping (model intent)
@@ -204,7 +204,7 @@ of two kinds of entries, each living in its natural home:
       "xflights-db": {
         "kind": "hana",
         "vcap": { "name": "xflights-db" },
-        "synonyms": { "deferred": true }   // SM policy lives with the binding
+        "synonyms": { "connect_mode": "dynamic" }   // SM policy lives with the binding
       }
     }
   }
@@ -231,7 +231,7 @@ the **same `<sm>` name must be used in all of them**:
 | File | What to add | Where `<sm>` appears |
 | --- | --- | --- |
 | main app `package.json` | service → SM mapping: `synonyms: { "service-manager": "<sm>" }` on the imported CDS service | the `service-manager` value |
-| `mtx/sidecar/package.json` | SM binding + policy: `"<sm>": { "kind": "hana", "vcap": { "name": "<sm>" }, "synonyms": { "deferred": … } }` | the entry key **and** `vcap.name` |
+| `mtx/sidecar/package.json` | SM binding + policy: `"<sm>": { "kind": "hana", "vcap": { "name": "<sm>" }, "synonyms": { "connect_mode": "dynamic" } }` | the entry key **and** `vcap.name` |
 | `mta.yaml` | an `existing-service` resource for the provider SM, plus a `requires` entry on the sidecar module so it is bound at deploy time | the resource name (and the `requires` entry) |
 
 The `mta.yaml` binding is standard CF service-binding plumbing; without it the sidecar's `vcap.name`
@@ -240,14 +240,14 @@ resolves to nothing at runtime and no credentials are found. See the
 
 ### Connect state and resolution
 
-The connect state of a `deferred` SM is stored per SM in a registry table: a row means connected,
+The connect state of a dynamically connected SM is stored per SM in a registry table: a row means connected,
 no row means disconnected. On each deployment the plugin resolves, per imported service, whether
 to connect:
 
-- A statically-controlled SM (not `deferred`) is always connected.
-- A `deferred` SM is connected if and only if a registry row exists for it.
+- A statically connected SM (no `connect_mode` set, or `'static'`) is always connected.
+- A dynamically connected SM (`connect_mode: 'dynamic'`) is connected if and only if a registry row exists for it.
 
-The `connect`/`unconnect` API (exposed on the MTX sidecar for `deferred` SMs; the application
+The `connect`/`unconnect` API (exposed on the MTX sidecar for dynamically connected SMs; the application
 itself exposes no such API) sets this desired state. It operates per service manager -
 `connect`/`unconnect` affect all imported services mapped to that SM together. The actual synonym
 redirection then happens on the next tenant deployment, which must be triggered explicitly (or
@@ -320,9 +320,9 @@ application. The synonym-specific setup is:
    see [Putting it together](#putting-it-together) for the three files involved (and the
    [Walkthrough](walkthrough.md) for a complete `mta.yaml`).
 2. Deploy and subscribe tenants as usual.
-3. For a `deferred` SM, connect its synonyms at runtime via the MTX sidecar API
+3. For a dynamically connected SM (`connect_mode: 'dynamic'`), connect its synonyms at runtime via the MTX sidecar API
    (`/-/cds/synonymapi`, called with an `internal-user` token) - see
-   [Connect state and resolution](#connect-state-and-resolution). A non-`deferred` SM is
+   [Connect state and resolution](#connect-state-and-resolution). A statically connected SM is
    already connected on deployment and needs no API call.
 
 > **Security:** the binding to the provider's Service Manager is not limited to the single provider container

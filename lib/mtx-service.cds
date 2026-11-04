@@ -13,12 +13,12 @@ service ConfigService {
   // SM credentials / provider container are found). Pass triggerUpgrade to apply it immediately.
   //   connect:
   //     - sm must be statically declared (referenced by a service mapping) and configured as
-  //       'deferred' (API-controlled); otherwise the call is rejected
+  //       dynamically connected ('connect_mode: dynamic'); otherwise the call is rejected
   //     - provider_tenant is accepted only if the SM's static config sets
   //       'allow-api-provider-tenant'; otherwise the own (deploying) tenant is used
   //   unconnect:
   //     - only deletes the SM's connect-state row (the safe direction); NOT gated by the allowlist /
-  //       'deferred' flag, so it can also clean up stale rows left by a static-config change
+  //       connect_mode, so it can also clean up stale rows left by a static-config change
   action connect  (tenant:String, sm: String, provider_tenant: String, triggerUpgrade: Boolean) returns String;
   action unconnect(tenant:String, sm: String,                          triggerUpgrade: Boolean) returns String;
   action check    (tenant:String, srv: String)           returns String;

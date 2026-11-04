@@ -9,13 +9,13 @@
 ### Added
 
 - Static config validation: at MTX sidecar startup the plugin warns about misconfigured `synonyms`
-  entries (unrecognized keys, `allow-api-provider-tenant` on a non-`deferred` SM, orphaned blocks).
+  entries (unrecognized keys, `allow-api-provider-tenant` on a statically connected SM, orphaned blocks).
 
 ### Changed
 
 - Synonym configuration model. The service → service-manager (SM) mapping is static and lives in
   the main app's `cds.requires` as `synonyms: { "service-manager": <sm> }`. The per-SM policy
-  (`deferred`, `allow-api-provider-tenant`) lives on the SM's binding entry in the sidecar's
+  (`connect_mode`, `allow-api-provider-tenant`) lives on the SM's binding entry in the sidecar's
   `mtx/sidecar/package.json`, next to its credentials binding.
 - Connect/disconnect is now per service manager (all CDS services mapped to an SM together), via
   the `connect` / `unconnect` actions of the MTX sidecar `ConfigService` (`/-/cds/synonymapi`).

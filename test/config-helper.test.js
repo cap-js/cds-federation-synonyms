@@ -39,12 +39,12 @@ function cleanupRequires() {
 function addSrvConfig(srv, sm) {
   cds.env.requires[srv] = { synonyms: { 'service-manager': sm } }
 }
-function addSmConfig(sm, { deferred, allowApiProviderTenant } = {}) {
+function addSmConfig(sm, { connect_mode, allowApiProviderTenant } = {}) {
   const synonyms = {}
-  if (deferred !== undefined) synonyms.deferred = deferred
+  if (connect_mode !== undefined) synonyms.connect_mode = connect_mode
   if (allowApiProviderTenant !== undefined) synonyms['allow-api-provider-tenant'] = allowApiProviderTenant
   cds.env.requires[sm] = { credentials: { kind: 'hana' }, synonyms }
-} 
+}
 // write per-SM connect state
 function writeConfigTable(sm, provider_tenant = null) {
   return INSERT.into('cds.dataproducts.synonyms.Registry').entries({ provider_service_manager: sm, provider_tenant })
@@ -78,11 +78,11 @@ describe('getResolvedConfig()', () => {
   })
 
 
-  describe('static-controlled SM (deferred absent/false)', () => {
+  describe('statically connected SM (connect_mode absent/static)', () => {
 
     it('maps a service to its SM', async () => {
       addSrvConfig('svc-a', 'sm-a')
-      addSmConfig('sm-a')  // no deferred
+      addSmConfig('sm-a')  // no connect_mode
       const result = await getResolvedConfig()
       expect(result).to.deep.equal([
         { srv: 'svc-a', provider_service_manager: 'sm-a', provider_tenant: null, connect_mode: 'static' }
@@ -98,9 +98,9 @@ describe('getResolvedConfig()', () => {
       ])
     })
 
-    it('ignores any table row for a static-controlled SM', async () => {
+    it('ignores any table row for a statically connected SM', async () => {
       addSrvConfig('svc-a', 'sm-a')
-      addSmConfig('sm-a', { deferred: false })
+      addSmConfig('sm-a', { connect_mode: 'static' })
       await writeConfigTable('sm-a', 'prov-t1')  // allow-api-provider-tenant is off -> tenant ignored anyway
       const result = await getResolvedConfig()
       expect(result).to.deep.equal([
@@ -108,10 +108,10 @@ describe('getResolvedConfig()', () => {
       ])
     })
 
-    it('ignores a stray table provider_tenant for a static-controlled SM even if api tenant is allowed', async () => {
-      // e.g. SM was deferred, got a row, then was switched to static-controlled
+    it('ignores a stray table provider_tenant for a statically connected SM even if api tenant is allowed', async () => {
+      // e.g. SM was dynamic, got a row, then was switched to static
       addSrvConfig('svc-a', 'sm-a')
-      addSmConfig('sm-a', { deferred: false, allowApiProviderTenant: true })
+      addSmConfig('sm-a', { connect_mode: 'static', allowApiProviderTenant: true })
       await writeConfigTable('sm-a', 'prov-t1')
       const result = await getResolvedConfig()
       expect(result).to.deep.equal([
@@ -133,11 +133,11 @@ describe('getResolvedConfig()', () => {
   })
 
 
-  describe('API-controlled SM (deferred: true)', () => {
+  describe('dynamically connected SM (connect_mode: dynamic)', () => {
 
     it('is disconnected when no table row exists', async () => {
       addSrvConfig('svc-a', 'sm-a')
-      addSmConfig('sm-a', { deferred: true })
+      addSmConfig('sm-a', { connect_mode: 'dynamic' })
       const result = await getResolvedConfig()
       expect(result).to.deep.equal([
         { srv: 'svc-a', provider_service_manager: null, provider_tenant: null, connect_mode: 'dynamic' }
@@ -146,7 +146,7 @@ describe('getResolvedConfig()', () => {
 
     it('is connected when a table row exists', async () => {
       addSrvConfig('svc-a', 'sm-a')
-      addSmConfig('sm-a', { deferred: true })
+      addSmConfig('sm-a', { connect_mode: 'dynamic' })
       await writeConfigTable('sm-a')
       const result = await getResolvedConfig()
       expect(result).to.deep.equal([
@@ -157,7 +157,7 @@ describe('getResolvedConfig()', () => {
     it('connects/disconnects all services of the SM together', async () => {
       addSrvConfig('svc-a', 'sm-shared')
       addSrvConfig('svc-b', 'sm-shared')
-      addSmConfig('sm-shared', { deferred: true })
+      addSmConfig('sm-shared', { connect_mode: 'dynamic' })
 
       // no table row yet -> all services of the SM are disconnected
       const before = (await getResolvedConfig()).sort((a, b) => a.srv.localeCompare(b.srv))
@@ -182,7 +182,7 @@ describe('getResolvedConfig()', () => {
 
     it('honors the table provider_tenant when allow-api-provider-tenant is true', async () => {
       addSrvConfig('svc-a', 'sm-a')
-      addSmConfig('sm-a', { deferred: true, allowApiProviderTenant: true })
+      addSmConfig('sm-a', { connect_mode: 'dynamic', allowApiProviderTenant: true })
       await writeConfigTable('sm-a', 'prov-t1')
       const result = await getResolvedConfig()
       expect(result[0]).to.deep.equal(
@@ -192,7 +192,7 @@ describe('getResolvedConfig()', () => {
 
     it('ignores the table provider_tenant when allow-api-provider-tenant is not set', async () => {
       addSrvConfig('svc-a', 'sm-a')
-      addSmConfig('sm-a', { deferred: true })
+      addSmConfig('sm-a', { connect_mode: 'dynamic' })
       await writeConfigTable('sm-a', 'prov-t1')
       const result = await getResolvedConfig()
       expect(result).to.deep.equal([
@@ -202,7 +202,7 @@ describe('getResolvedConfig()', () => {
 
     it('yields null provider_tenant when allowed but the table row has no tenant', async () => {
       addSrvConfig('svc-a', 'sm-a')
-      addSmConfig('sm-a', { deferred: true, allowApiProviderTenant: true })
+      addSmConfig('sm-a', { connect_mode: 'dynamic', allowApiProviderTenant: true })
       await writeConfigTable('sm-a')  // row present, but no provider_tenant
       const result = await getResolvedConfig()
       expect(result).to.deep.equal([
@@ -246,9 +246,9 @@ describe('checkService()', () => {
     })
   })
 
-  it('reports an API-controlled service as disconnected without a table row', async () => {
+  it('reports a dynamically connected SM as disconnected without a table row', async () => {
     addSrvConfig('svc-a', 'sm-a')
-    addSmConfig('sm-a', { deferred: true })
+    addSmConfig('sm-a', { connect_mode: 'dynamic' })
     const result = await checkService('svc-a')
     expect(result).to.deep.equal({
       'service-manager': 'sm-a',
@@ -261,7 +261,7 @@ describe('checkService()', () => {
 
   it('reports the API provider tenant when connected and allowed', async () => {
     addSrvConfig('svc-a', 'sm-a')
-    addSmConfig('sm-a', { deferred: true, allowApiProviderTenant: true })
+    addSmConfig('sm-a', { connect_mode: 'dynamic', allowApiProviderTenant: true })
     await writeConfigTable('sm-a', 'prov-t1')
     const result = await checkService('svc-a')
     expect(result).to.deep.equal({
@@ -275,7 +275,7 @@ describe('checkService()', () => {
 
   it('shows own tenant when connected but API tenant is not allowed', async () => {
     addSrvConfig('svc-a', 'sm-a')
-    addSmConfig('sm-a', { deferred: true })
+    addSmConfig('sm-a', { connect_mode: 'dynamic' })
     await writeConfigTable('sm-a', 'prov-t1')
     const result = await checkService('svc-a')
     expect(result).to.deep.equal({
@@ -305,30 +305,30 @@ describe('getSmConfig()', () => {
     expect(Object.keys(result)).to.deep.equal(['sm-a'])
   })
 
-  it('reports default policy (not deferred, api tenant not allowed) when SM entry is absent', () => {
+  it('reports default policy (static, api tenant not allowed) when SM entry is absent', () => {
     addSrvConfig('svc-a', 'sm-a')  // no sm-a policy entry
-    expect(getSmConfig()['sm-a']).to.deep.equal({ deferred: false, allowApiProviderTenant: false })
+    expect(getSmConfig()['sm-a']).to.deep.equal({ dynamic: false, allowApiProviderTenant: false })
   })
 
   it('reflects the SM policy flags', () => {
     addSrvConfig('svc-a', 'sm-a')
-    addSmConfig('sm-a', { deferred: true, allowApiProviderTenant: true })
-    expect(getSmConfig()['sm-a']).to.deep.equal({ deferred: true, allowApiProviderTenant: true })
+    addSmConfig('sm-a', { connect_mode: 'dynamic', allowApiProviderTenant: true })
+    expect(getSmConfig()['sm-a']).to.deep.equal({ dynamic: true, allowApiProviderTenant: true })
   })
 
-  it('reflects allowApiProviderTenant independently of deferred', () => {
+  it('reflects allowApiProviderTenant independently of connect_mode', () => {
     addSrvConfig('svc-a', 'sm-a')
-    addSmConfig('sm-a', { deferred: false, allowApiProviderTenant: true })
-    expect(getSmConfig()['sm-a']).to.deep.equal({ deferred: false, allowApiProviderTenant: true })
+    addSmConfig('sm-a', { connect_mode: 'static', allowApiProviderTenant: true })
+    expect(getSmConfig()['sm-a']).to.deep.equal({ dynamic: false, allowApiProviderTenant: true })
   })
 
   it('deduplicates an SM referenced by multiple services', () => {
     addSrvConfig('svc-a', 'sm-shared')
     addSrvConfig('svc-b', 'sm-shared')
-    addSmConfig('sm-shared', { deferred: true })
+    addSmConfig('sm-shared', { connect_mode: 'dynamic' })
     const result = getSmConfig()
     expect(Object.keys(result)).to.deep.equal(['sm-shared'])
-    expect(result['sm-shared'].deferred).to.be.true
+    expect(result['sm-shared'].dynamic).to.be.true
   })
 
 })
@@ -352,7 +352,7 @@ describe('validateConfig()', () => {
 
   it('emits no warning for a valid config', () => {
     addSrvConfig('svc-a', 'sm-a')
-    addSmConfig('sm-a', { deferred: true, allowApiProviderTenant: true })
+    addSmConfig('sm-a', { connect_mode: 'dynamic', allowApiProviderTenant: true })
     validateConfig()
     expect(warnSpy.mock.calls.length).to.equal(0)
   })
@@ -365,27 +365,27 @@ describe('validateConfig()', () => {
 
   it('warns on an unrecognized key in an SM policy entry', () => {
     addSrvConfig('svc-a', 'sm-a')
-    cds.env.requires['sm-a'] = { synonyms: { deferred: true, 'bad-key': 1 } }
+    cds.env.requires['sm-a'] = { synonyms: { connect_mode: 'dynamic', 'bad-key': 1 } }
     validateConfig()
     expect(warnings()).to.match(/unrecognized key 'bad-key' in SM policy for 'sm-a'/)
   })
 
-  it('warns when allow-api-provider-tenant is set on a non-deferred SM', () => {
+  it('warns when allow-api-provider-tenant is set on a statically connected SM', () => {
     addSrvConfig('svc-a', 'sm-a')
-    addSmConfig('sm-a', { allowApiProviderTenant: true })  // no deferred
+    addSmConfig('sm-a', { allowApiProviderTenant: true })  // no connect_mode: dynamic
     validateConfig()
-    expect(warnings()).to.match(/'allow-api-provider-tenant' on SM 'sm-a' has no effect because 'deferred' is not set/)
+    expect(warnings()).to.match(/'allow-api-provider-tenant' on SM 'sm-a' has no effect because 'connect_mode' is not 'dynamic'/)
   })
 
-  it('does not warn when allow-api-provider-tenant is set on a deferred SM', () => {
+  it('does not warn when allow-api-provider-tenant is set on a dynamically connected SM', () => {
     addSrvConfig('svc-a', 'sm-a')
-    addSmConfig('sm-a', { deferred: true, allowApiProviderTenant: true })
+    addSmConfig('sm-a', { connect_mode: 'dynamic', allowApiProviderTenant: true })
     validateConfig()
     expect(warnings()).not.to.match(/allow-api-provider-tenant/)
   })
 
   it('warns on an orphaned synonyms block (neither mapping nor declared SM)', () => {
-    cds.env.requires['sm-orphan'] = { synonyms: { deferred: true } }
+    cds.env.requires['sm-orphan'] = { synonyms: { connect_mode: 'dynamic' } }
     validateConfig()
     expect(warnings()).to.match(/entry 'sm-orphan' has a 'synonyms' block but is neither a service mapping nor a declared SM/)
   })

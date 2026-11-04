@@ -469,7 +469,7 @@ You should see the data coming directly from the xflights app - the synonyms are
 
 By default a mapped service manager's synonyms are connected on every deployment. If instead you want
 to decide at runtime when they are connected - e.g. connect only once the provider tenant is ready, or
-temporarily disconnect again - mark the service manager as `deferred`. The policy goes on the SM's
+temporarily disconnect again - set `connect_mode: "dynamic"` on the service manager. The policy goes on the SM's
 binding entry in _mtx/sidecar/package.json_ (the mapping in the app's _package.json_ stays unchanged):
 ```jsonc
   "cds": {
@@ -477,15 +477,15 @@ binding entry in _mtx/sidecar/package.json_ (the mapping in the app's _package.j
       "xflights-db": {
         "kind": "hana",
         "vcap": { "name": "xflights-db" },
-        // 'deferred' -> the connect state is controlled via the API, not on deployment
-        "synonyms": { "deferred": true }
+        // 'dynamic' -> the connect state is controlled via the API, not on deployment
+        "synonyms": { "connect_mode": "dynamic" }
       },
       // ...
     }
   }
 ```
 
-A `deferred` service manager starts unconnected: after subscription its synonyms point to the local
+A dynamically connected service manager starts unconnected: after subscription its synonyms point to the local
 mock tables (querying `.../odata/v4/Travel/Flights` returns the mock data from the imported API's _csv_
 files) until you connect them via the MTX sidecar `synonymapi` in xtravels-mtx. `connect`/`unconnect`
 operate on the whole service manager - all imported services mapped to it (here

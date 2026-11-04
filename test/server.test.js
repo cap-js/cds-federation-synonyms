@@ -50,9 +50,9 @@ function cleanupDir(dir) {
 function addSrvConfig(srv, sm) {
   cds.env.requires[srv] = { synonyms: { 'service-manager': sm } }
 }
-function addSmConfig(sm, { deferred, allowApiProviderTenant } = {}) {
+function addSmConfig(sm, { connect_mode, allowApiProviderTenant } = {}) {
   const synonyms = {}
-  if (deferred !== undefined) synonyms.deferred = deferred
+  if (connect_mode !== undefined) synonyms.connect_mode = connect_mode
   if (allowApiProviderTenant !== undefined) synonyms['allow-api-provider-tenant'] = allowApiProviderTenant
   cds.env.requires[sm] = { credentials: { kind: 'hana' }, synonyms }
 }
@@ -323,14 +323,14 @@ describe('PlugIntoMtx - before deploy handler', () => {
   })
 
 
-  it('deferred SM connected via table row with allowed provider tenant → container fetched for that tenant', async () => {
+  it('dynamically connected SM with table row and allowed provider tenant → container fetched for that tenant', async () => {
     const srv            = 'sap.capire.flights'
-    const sm             = 'sm-deferred'
+    const sm             = 'sm-dynamic'
     const providerTenant = 'prov-t1'
     const fakeCredentials = { schema: 'TENANT_SCHEMA', url: 'jdbc:sap://host' }
 
     addSrvConfig(srv, sm)
-    addSmConfig(sm, { deferred: true, allowApiProviderTenant: true })
+    addSmConfig(sm, { connect_mode: 'dynamic', allowApiProviderTenant: true })
     await writeConfigTable(sm, providerTenant)
 
     cds.services['cds.xt.ModelProviderService'] = {
@@ -371,12 +371,12 @@ describe('PlugIntoMtx - before deploy handler', () => {
   })
 
 
-  it('deferred SM without a table row → service treated as unconnected', async () => {
+  it('dynamically connected SM without a table row → service treated as unconnected', async () => {
     const srv = 'sap.capire.flights'
-    const sm  = 'sm-deferred'
+    const sm  = 'sm-dynamic'
 
     addSrvConfig(srv, sm)
-    addSmConfig(sm, { deferred: true })  // deferred, no table row → disconnected
+    addSmConfig(sm, { connect_mode: 'dynamic' })  // dynamic, no table row → disconnected
 
     cds.services['cds.xt.ModelProviderService'] = {
       getCsn: async () => makeCsn([srv])

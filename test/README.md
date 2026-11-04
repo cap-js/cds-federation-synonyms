@@ -47,7 +47,7 @@ Runs entirely locally, no deployment or credentials needed.
 Unit test for _lib/config-helper.js_.
 Boots CDS with an in-memory SQLite DB and mocks _lib/status-sql.js_ (this file calls `ModelProviderService.getCsn()` when
 running inside the MTX sidecar and queries `SYS.SYNONYMS`, neither of which is available in the local test environment).
-Covers the per-service resolution (`getResolvedConfig`): static-controlled vs. deferred (API-controlled) service managers, and the per-SM connect state from the config table..
+Covers the per-service resolution (`getResolvedConfig`): statically vs. dynamically connected service managers, and the per-SM connect state from the config table..
 
 Runs entirely locally, no deployment or credentials needed.
 

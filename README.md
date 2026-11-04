@@ -67,7 +67,7 @@ services that are mapped to the same HDI container instance (or SM) are connecte
 For a single tenant app, it is a deployment decision. For a multi tenant app, the mapping of
 imported services to their provider SM is given as static configuration; whether an SM's synonyms
 are connected is then either fixed by that static config (connected on every deployment) or, if the
-SM is marked as `deferred`, switched at runtime via the MTX sidecar API
+SM is set to `connect_mode: "dynamic"`, switched at runtime via the MTX sidecar API
 (`/-/cds/synonymapi`) provided by the plugin.
 
 For the full configuration model, see [Configuration](./doc/details.md#configuration).

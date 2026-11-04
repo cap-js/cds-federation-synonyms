@@ -19,9 +19,9 @@ let srv, ds
 function addSrvConfig(srv, sm) {
   cds.env.requires[srv] = { synonyms: { 'service-manager': sm } }
 }
-function addSmConfig(sm, { deferred, allowApiProviderTenant } = {}) {
+function addSmConfig(sm, { connect_mode, allowApiProviderTenant } = {}) {
   const synonyms = {}
-  if (deferred !== undefined) synonyms.deferred = deferred
+  if (connect_mode !== undefined) synonyms.connect_mode = connect_mode
   if (allowApiProviderTenant !== undefined) synonyms['allow-api-provider-tenant'] = allowApiProviderTenant
   cds.env.requires[sm] = { credentials: { clientid: 'id' }, synonyms }
 }
@@ -77,12 +77,12 @@ beforeEach(async () => {
 describe('ConfigService.connect', () => {
 
   it('rejects when the tenant parameter is missing', async () => {
-    addSmConfig('sm-a', { deferred: true }); addSrvConfig('svc-a', 'sm-a')
+    addSmConfig('sm-a', { connect_mode: 'dynamic' }); addSrvConfig('svc-a', 'sm-a')
     await expectReject('connect', { sm: 'sm-a' }, 'tenant parameter missing')
   })
 
   it('rejects an unknown tenant', async () => {
-    addSmConfig('sm-a', { deferred: true }); addSrvConfig('svc-a', 'sm-a')
+    addSmConfig('sm-a', { connect_mode: 'dynamic' }); addSrvConfig('svc-a', 'sm-a')
     await expectReject('connect', { tenant: 't-unknown', sm: 'sm-a' }, 'tenant not found')
   })
 
@@ -92,22 +92,22 @@ describe('ConfigService.connect', () => {
     expect(result).to.have.lengthOf(0)
   })
 
-  it('rejects a statically-controlled SM (not deferred)', async () => {
-    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { deferred: false })
+  it('rejects a statically connected SM', async () => {
+    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'static' })
     await expectReject('connect', { tenant: 't1', sm: 'sm-a' }, 'statically controlled')
     const result = await rows()
     expect(result).to.have.lengthOf(0)
   })
 
   it('rejects a provider_tenant when allow-api-provider-tenant is not set', async () => {
-    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { deferred: true })
+    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
     await expectReject('connect', { tenant: 't1', sm: 'sm-a', provider_tenant: 'pt1' }, 'provider_tenant not allowed')
     const result = await rows()
     expect(result).to.have.lengthOf(0)
   })
 
-  it('connects a deferred SM: writes a row, no provider_tenant, no upgrade by default', async () => {
-    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { deferred: true })
+  it('connects a dynamically connected SM: writes a row, no provider_tenant, no upgrade by default', async () => {
+    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
     await call('connect', { tenant: 't1', sm: 'sm-a' })
     const result = await rows()
     expect(result).to.have.lengthOf(1)
@@ -117,7 +117,7 @@ describe('ConfigService.connect', () => {
   })
 
   it('stores the provider_tenant when allowed and triggers an upgrade on request', async () => {
-    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { deferred: true, allowApiProviderTenant: true })
+    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic', allowApiProviderTenant: true })
     await call('connect', { tenant: 't1', sm: 'sm-a', provider_tenant: 'pt1', triggerUpgrade: true })
     const result = await rows()
     expect(result).to.have.lengthOf(1)
@@ -126,7 +126,7 @@ describe('ConfigService.connect', () => {
   })
 
   it('connect is idempotent (upsert) for the same SM', async () => {
-    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { deferred: true, allowApiProviderTenant: true })
+    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic', allowApiProviderTenant: true })
     await call('connect', { tenant: 't1', sm: 'sm-a' })
     await call('connect', { tenant: 't1', sm: 'sm-a', provider_tenant: 'pt2' })
     const result = await rows()
@@ -151,16 +151,16 @@ describe('ConfigService.unconnect', () => {
     expect(result).to.have.lengthOf(0)
   })
 
-  it('clears a stale row for a statically-controlled (non-deferred) SM (cleanup)', async () => {
-    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { deferred: false })
+  it('clears a stale row for a statically connected SM (cleanup)', async () => {
+    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'static' })
     await INSERT.into(REG).entries({ provider_service_manager: 'sm-a', provider_tenant: null })
     await call('unconnect', { tenant: 't1', sm: 'sm-a' })
     const result = await rows()
     expect(result).to.have.lengthOf(0)
   })
 
-  it('deletes the row for a deferred SM', async () => {
-    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { deferred: true })
+  it('deletes the row for a dynamically connected SM', async () => {
+    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
     await INSERT.into(REG).entries({ provider_service_manager: 'sm-a', provider_tenant: null })
     await call('unconnect', { tenant: 't1', sm: 'sm-a' })
     const result = await rows()
@@ -168,7 +168,7 @@ describe('ConfigService.unconnect', () => {
   })
 
   it('is idempotent when no row exists, and triggers upgrade on request', async () => {
-    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { deferred: true })
+    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
     await call('unconnect', { tenant: 't1', sm: 'sm-a', triggerUpgrade: true })
     const result = await rows()
     expect(result).to.have.lengthOf(0)
@@ -180,8 +180,8 @@ describe('ConfigService.unconnect', () => {
 
 describe('ConfigService config round-trip (set via API, read back via getConfig)', () => {
 
-  it('getConfig shows a deferred SM as disconnected until connected', async () => {
-    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { deferred: true })
+  it('getConfig shows a dynamically connected SM as disconnected until connected', async () => {
+    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
     const config = await getConfig()
     expect(config).to.deep.equal([
       { srv: 'svc-a', provider_service_manager: null, provider_tenant: null, connect_mode: 'dynamic' }
@@ -189,7 +189,7 @@ describe('ConfigService config round-trip (set via API, read back via getConfig)
   })
 
   it('getConfig reflects a connect', async () => {
-    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { deferred: true })
+    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
     await call('connect', { tenant: 't1', sm: 'sm-a' })
     const config = await getConfig()
     expect(config).to.deep.equal([
@@ -198,7 +198,7 @@ describe('ConfigService config round-trip (set via API, read back via getConfig)
   })
 
   it('getConfig reflects the provider_tenant when allowed', async () => {
-    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { deferred: true, allowApiProviderTenant: true })
+    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic', allowApiProviderTenant: true })
     await call('connect', { tenant: 't1', sm: 'sm-a', provider_tenant: 'pt1' })
     const config = await getConfig()
     expect(config).to.deep.equal([
@@ -207,7 +207,7 @@ describe('ConfigService config round-trip (set via API, read back via getConfig)
   })
 
   it('getConfig reflects an unconnect (back to disconnected)', async () => {
-    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { deferred: true })
+    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
     await call('connect', { tenant: 't1', sm: 'sm-a' })
     await call('unconnect', { tenant: 't1', sm: 'sm-a' })
     const config = await getConfig()
@@ -218,7 +218,7 @@ describe('ConfigService config round-trip (set via API, read back via getConfig)
 
   it('getConfig connects all services of the SM together', async () => {
     addSrvConfig('svc-a', 'sm-shared'); addSrvConfig('svc-b', 'sm-shared')
-    addSmConfig('sm-shared', { deferred: true })
+    addSmConfig('sm-shared', { connect_mode: 'dynamic' })
     await call('connect', { tenant: 't1', sm: 'sm-shared' })
     const config = (await getConfig()).sort((a, b) => a.srv.localeCompare(b.srv))
     expect(config[0]).to.deep.equal(
