@@ -48,29 +48,28 @@ Authorization: Bearer {{mtx_token}}
 
 {
   "tenant": "{{tenant_id}}",
-  "srv": "sap.capire.flights.FlightsService_syn"
+  "service": "sap.capire.flights.FlightsService_syn"
 }
 
 ###
-POST {{mtx_url}}/-/cds/synonymapi/setDynamicConfig
+POST {{mtx_url}}/-/cds/synonymapi/connect
 Content-Type: application/json
 Authorization: Bearer {{mtx_token}}
 
 {
   "tenant": "{{tenant_id}}",
-  "srv": "sap.capire.flights.FlightsService_syn",
-  "provider_service_manager": "xflights-db",
+  "providerServiceManager": "xflights-db",
   "triggerUpgrade": true
 }
 
 ###
-POST {{mtx_url}}/-/cds/synonymapi/deleteDynamicConfig
+POST {{mtx_url}}/-/cds/synonymapi/unconnect
 Content-Type: application/json
 Authorization: Bearer {{mtx_token}}
 
 {
   "tenant": "{{tenant_id}}",
-  "srv": "sap.capire.flights.FlightsService_syn",
+  "providerServiceManager": "xflights-db",
   "triggerUpgrade": true
 }
 

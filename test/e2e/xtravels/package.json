@@ -6,9 +6,9 @@
     "start": "cds-serve"
   },
   "dependencies": {
-    "@capire/xflights-data-syn": "file:../apis/capire-xflights-data-syn-0.1.3.tgz",
     "@cap-js/cds-federation-synonyms": "file:../cap-js-cds-federation-synonyms-0.0.1.tgz",
     "@cap-js/hana": "^3",
+    "@capire/xflights-data-syn": "file:../apis/capire-xflights-data-syn-0.1.3.tgz",
     "@sap/cds": "^10",
     "@sap/cds-mtxs": "^4",
     "@sap/xssec": "^4"
@@ -25,6 +25,11 @@
       },
       "[with-mtx]": {
         "multitenancy": true
+      },
+      "sap.capire.flights.FlightsService_syn": {
+        "synonyms": {
+          "service-manager": "xflights-db"
+        }
       }
     },
     "profile": "with-mtx-sidecar"

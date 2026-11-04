@@ -1,7 +1,8 @@
 using { sap.capire.travels as our, sap } from '../db/schema';
 using { sap.capire.xflights as x } from '../apis/capire/xflights';
 
-@fiori service TravelService {
+@fiori @path: 'Travel'  // explicit path so Node and Java serve at the same URL (/odata/v4/Travel)
+service TravelService {
 
   @readonly entity Travels as projection on our.Travels;
 

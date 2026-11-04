@@ -7,14 +7,21 @@ using from './int-schema';  // ensure that int-schema.cds is included in the mod
 @path: '/-/cds/synonymapi'
 service ConfigService {
   action getConfig(tenant:String)                        returns String;
-  // provider_service_manager / provider_tenant: identify the provider container
-  //   provider_tenant is optional
-  //   provider_service_manager = null -> explicitly unconnect (overrides static config)
-  action setDynamicConfig   (tenant:String, srv: String, provider_service_manager: String,
-                                                         provider_tenant: String,
-                                                         triggerUpgrade: Boolean) returns String;
-  action deleteDynamicConfig(tenant:String, srv: String, triggerUpgrade: Boolean) returns String;
-  action check    (tenant:String, srv: String)           returns String;
+  // connect / unconnect set the desired connect state of a whole service manager (SM): all CDS
+  // services statically mapped to the SM are connected/disconnected together. This only records the
+  // intent; it takes effect on the next tenant deploy (best-effort: a service stays unconnected if no
+  // SM credentials / provider container are found). Pass triggerUpgrade to apply it immediately.
+  //   connect:
+  //     - providerServiceManager must be statically declared (referenced by a service mapping) and configured as
+  //       dynamically connected ('connect_mode: dynamic'); otherwise the call is rejected
+  //     - providerTenant is accepted only if the SM's static config sets
+  //       'allow-api-provider-tenant'; otherwise the own (deploying) tenant is used
+  //   unconnect:
+  //     - only deletes the SM's connect-state row (the safe direction); NOT gated by the allowlist /
+  //       connect_mode, so it can also clean up stale rows left by a static-config change
+  action connect  (tenant: String, providerServiceManager: String, providerTenant: String, triggerUpgrade: Boolean) returns String;
+  action unconnect(tenant: String, providerServiceManager: String,                         triggerUpgrade: Boolean) returns String;
+  action check    (tenant: String, service: String)          returns String;
 
   @readonly @cds.persistence.skip
   entity Status (tenant: String) {
