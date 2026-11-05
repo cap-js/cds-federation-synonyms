@@ -168,9 +168,9 @@ above, and restrict access to the `internal-user`-protected API accordingly.
 ### Audit logging
 
 The `connect` / `unconnect` actions decide which provider data a consumer tenant can reach, so
-they are recorded in the SAP Audit Log Service (successful changes as `ConfigurationModified`,
-rejected attempts as `SecurityEvent`). Audit logging is **mandatory**: if no audit log is
-configured or reachable, these actions are rejected (HTTP 503) rather than performed unaudited.
+they are recorded in the SAP Audit Log Service (successful changes as `ConfigurationModified`, and relevant attempts to set a disallowed state as `SecurityEvent`). Audit logging
+is best-effort: if no audit log is configured or reachable, the actions still proceed and a warning
+is written to the application log.
 The recorded actor is the technical client of the caller (the API requires the `internal-user`
 role), not a named person. See [Audit logging](./doc/details.md#audit-logging) for the setup.
 

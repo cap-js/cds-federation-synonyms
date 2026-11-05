@@ -492,8 +492,8 @@ operate on the whole service manager - all imported services mapped to it (here
 `sap.capire.flights.FlightsService_syn`) are switched together.
 
 
-Note: In order to use the `connect`/`unconnect` functions of `synonymapi`, audit log must be configured.
-See [Audit logging](details.md#audit-logging).
+Note: Configuring an audit log for the MTX sidecar is strongly recommended so that `connect` /
+`unconnect` are recorded, but it is not required for them to work. See [Audit logging](details.md#audit-logging).
 
 Note: The requests shown here are lacking authorization details. See [the test README](../test/README.md) for
 more info on tokens and [complete example requests](../test/syn-config.http).

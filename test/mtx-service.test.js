@@ -275,6 +275,14 @@ describe('ConfigService audit logging', () => {
     expect(attrs).to.deep.include({ name: 'provider_tenant', old: 'pt1', new: 'pt2' })
   })
 
+  it('a no-op re-connect (identical values) emits nothing', async () => {
+    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic', allowApiProviderTenant: true })
+    await call('connect', { tenant: 't1', providerServiceManager: 'sm-a', providerTenant: 'pt1' })
+    auditEvents.length = 0
+    await call('connect', { tenant: 't1', providerServiceManager: 'sm-a', providerTenant: 'pt1' })
+    expect(auditEvents).to.have.lengthOf(0)
+  })
+
   it('unconnect of an existing row emits ConfigurationModified with new=null', async () => {
     addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
     await INSERT.into(REG).entries({ provider_service_manager: 'sm-a', provider_tenant: 'pt1' })
@@ -291,26 +299,27 @@ describe('ConfigService audit logging', () => {
     expect(auditEvents).to.have.lengthOf(0)
   })
 
-  it('a denied connect (unknown sm) emits a SecurityEvent and no ConfigurationModified', async () => {
+  it('denied connects that are not privilege violations are NOT audited', async () => {
+    // unknown SM and statically-controlled SM are typo-prone config mistakes, not security events
+    addSrvConfig('svc-a', 'sm-static'); addSmConfig('sm-static', { connect_mode: 'static' })
     await expectReject('connect', { tenant: 't1', providerServiceManager: 'sm-unknown' }, 'unknown service manager')
+    await expectReject('connect', { tenant: 't1', providerServiceManager: 'sm-static' }, 'statically controlled')
+    expect(auditEvents).to.have.lengthOf(0)
+  })
+
+  it('a denied connect (providerTenant not allowed) records the attempted provider_tenant', async () => {
+    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
+    await expectReject('connect', { tenant: 't1', providerServiceManager: 'sm-a', providerTenant: 'pt1' }, 'providerTenant not allowed')
     const sec = securityEvents()
     expect(sec).to.have.lengthOf(1)
     expect(sec[0].data.tenant).to.equal('$PROVIDER')          // written to the provider account
     expect(sec[0].data.data.object_type).to.equal('cds.dataproducts.synonyms.Registry')
     expect(sec[0].data.data.action).to.equal('connect')
     expect(sec[0].data.data.tenant).to.equal('t1')            // app tenant preserved in the event data
-    expect(sec[0].data.data.service_manager).to.equal('sm-unknown')
-    expect(sec[0].data.data.reason).to.include('unknown service manager')
+    expect(sec[0].data.data.service_manager).to.equal('sm-a')
+    expect(sec[0].data.data.provider_tenant).to.equal('pt1')
+    expect(sec[0].data.data.reason).to.include('providerTenant not allowed')
     expect(configEvents()).to.have.lengthOf(0)
-  })
-
-  it('a denied connect (providerTenant not allowed) records the attempted provider_tenant', async () => {
-    addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
-    await expectReject('connect', { tenant: 't1', providerServiceManager: 'sm-a', providerTenant: 'pt1' }, 'providerTenant not allowed')
-    const sec = securityEvents()[0]
-    expect(sec.data.data.object_type).to.equal('cds.dataproducts.synonyms.Registry')
-    expect(sec.data.data.provider_tenant).to.equal('pt1')
-    expect(sec.data.data.reason).to.include('providerTenant not allowed')
   })
 
   it('a missing or unknown tenant is NOT audited', async () => {
@@ -319,14 +328,15 @@ describe('ConfigService audit logging', () => {
     expect(auditEvents).to.have.lengthOf(0)
   })
 
-  it('rejects connect with 503 and writes nothing when the audit log is unavailable', async () => {
+  it('succeeds (best-effort) and writes the row when the audit log is unavailable', async () => {
     addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
     const real = cds.connect.to.bind(cds.connect)
     const spy = jest.spyOn(cds.connect, 'to').mockImplementation(name =>
       name === 'audit-log' ? Promise.reject(new Error('no audit binding')) : real(name))
     try {
-      await expectReject('connect', { tenant: 't1', providerServiceManager: 'sm-a' }, 'audit log unavailable')
-      expect(await rows()).to.have.lengthOf(0)
+      await call('connect', { tenant: 't1', providerServiceManager: 'sm-a' })
+      expect(await rows()).to.have.lengthOf(1)
+      expect(auditEvents).to.have.lengthOf(0)
     } finally {
       spy.mockRestore()
     }

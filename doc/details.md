@@ -287,8 +287,8 @@ via the [`@cap-js/audit-logging`](https://github.com/cap-js/audit-logging) plugi
 
 - a successful `connect` / `unconnect` emits a `ConfigurationModified` event with the affected
   service manager and the before/after `provider_service_manager` / `provider_tenant`;
-- a rejected `connect` (unknown SM, statically-controlled SM, or a disallowed `provider_tenant`)
-  emits a `SecurityEvent` recording the attempt.
+- a rejected `connect` that attempts to set a disallowed `provider_tenant` emits a `SecurityEvent`
+  recording the attempt (other rejections are logged to the application log only, not audited).
 
 This is only relevant for `dynamic` SMs (the ones the API can connect/unconnect).
 
@@ -303,10 +303,23 @@ log into its MTX sidecar:
 In development (no binding) the plugin logs to the console; in production it writes to the bound
 service. The `test/e2e/xtravels*` sample apps show a complete setup.
 
-### No audit, no action
+### Availability and failure handling
 
-Audit logging is mandatory for these operations: if no audit log target is configured or
-reachable, `connect` / `unconnect` are **rejected** (HTTP 503) rather than performed unaudited.
+Audit logging is best-effort: if no audit log target is configured or reachable at startup, the
+plugin logs a warning to the application log and `connect` / `unconnect` proceed without an audit
+trail. If the audit log write fails after the operation has already committed, the failure is also
+logged as a warning and the operation result stands.
+
+Audit entries are delivered asynchronously through the plugin's outbox: the operation enqueues the
+entry and returns, and the outbox delivers it in the background (with retries). An entry that cannot
+be delivered after the outbox exhausts its retries is dead-lettered by the outbox, not surfaced to
+the caller, so a successful operation may, in rare cases, end up without a persisted audit entry.
+
+This means the audit log is strongly recommended in production but is not a hard gate. Operators
+that require guaranteed audit coverage should monitor for the warning message
+`audit log unavailable` in the application log, monitor the outbox for dead-lettered messages, and
+ensure the Audit Log Service is bound before tenants can invoke `connect` / `unconnect`.
+
 Read-only actions (`getConfig`, `check`, status) are unaffected, and an app with no `dynamic` SM
 does not need the audit log at all.
 
@@ -321,8 +334,9 @@ individual person.
 #### Successful connect / unconnect → `ConfigurationModified`
 
 A `ConfigurationModified` event is written when a `connect` or `unconnect` operation changes the
-Registry (upsert or delete). An `unconnect` for an SM that is not currently connected is a no-op
-and produces no entry.
+Registry (upsert or delete). Operations that change nothing produce no entry: an `unconnect` for an
+SM that is not currently connected, and a `connect` that repeats the SM's current values, are both
+no-ops and are not recorded.
 
 ```
 object.type:  cds.dataproducts.synonyms.Registry
@@ -338,29 +352,33 @@ attributes:   (only fields whose value actually changed)
 
 #### Rejected connect → `SecurityEvent`
 
-A `SecurityEvent` is written when a `connect` call is rejected for one of the following policy
-reasons (the tenant was resolved, but the operation was denied):
+A `SecurityEvent` is written when a `connect` call is rejected because it attempts to set a
+`providerTenant` that the SM's policy does not grant. This is a privilege-boundary violation and is
+worth recording for forensics:
 
 | Reason | `reason` field value |
 |---|---|
-| SM parameter absent or blank | `providerServiceManager parameter missing` |
-| SM not in the static config | `unknown service manager (not statically declared): <sm>` |
-| SM has `connect_mode: static` | `service manager is statically controlled; connect/unconnect not allowed: <sm>` |
-| `providerTenant` passed but `allow-api-provider-tenant` not set | `providerTenant not allowed for this service manager (allow-api-provider-tenant is not set): <sm>` |
+| `providerTenant` passed but `allow-api-provider-tenant` not set | `providerTenant not allowed` |
 
 ```
 data:
   object_type:      cds.dataproducts.synonyms.Registry
   action:           "connect"
-  reason:           <one of the messages above>
+  reason:           "providerTenant not allowed"
   tenant:           <subscriber tenant ID>
-  service_manager:  <SM name, or null if absent/blank>
-  provider_tenant:  <requested value, or null>
+  service_manager:  <SM name>
+  provider_tenant:  <requested value>
 ```
 
-Rejections that happen before the tenant is resolved (missing or unknown `tenant` parameter) are
-not audited; they are recorded in the application log only. `unconnect` rejections are never
-audited (the operation only deletes rows, so no policy check is applied).
+Other rejections are **not** audited; they are recorded in the application log only:
+
+- unknown SM (not in the static config) and statically-controlled SM (`connect_mode: static`): these
+  are typo-prone configuration mistakes, not security-relevant attempts;
+- missing/blank `providerServiceManager` parameter;
+- rejections that happen before the tenant is resolved (missing or unknown `tenant` parameter).
+
+`unconnect` rejections are never audited (the operation only deletes rows, so no policy check is
+applied).
 
 ### Testing without the real service
 

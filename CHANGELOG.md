@@ -9,9 +9,10 @@
 ### Added
 
 - Audit logging of the `connect` / `unconnect` config-change actions via `@cap-js/audit-logging`
-  (successful changes as `ConfigurationModified`, rejected attempts as `SecurityEvent`). The
-  actions are rejected (HTTP 503) if no audit log is configured ("no audit, no action"). See
-  [Audit logging](doc/details.md#audit-logging).
+  (successful changes as `ConfigurationModified`, a `connect` that attempts to set a disallowed
+  `provider_tenant` as `SecurityEvent`). Audit logging is best-effort: if no audit log is
+  configured or reachable, the actions still proceed and a warning is written to the application
+  log. See [Audit logging](doc/details.md#audit-logging).
 - Static config validation: at MTX sidecar startup the plugin warns about misconfigured `synonyms`
   entries (unrecognized keys, `allow-api-provider-tenant` on a statically connected SM, orphaned blocks).
 
