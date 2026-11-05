@@ -72,7 +72,6 @@ modules:
       - name: xtravels-auth
       - name: xtravels-db
       - name: xflights-db        # <----
-      - name: xtravels-audit-log
     build-parameters:
       builder: custom
       build-result: gen
@@ -122,12 +121,6 @@ resources:
 
   - name: xflights-db
     type: org.cloudfoundry.existing-service
-
-  - name: xtravels-audit-log
-    type: org.cloudfoundry.managed-service
-    parameters:
-      service: auditlog
-      service-plan: oauth2
 
   - name: xtravels-registry
     type: org.cloudfoundry.managed-service

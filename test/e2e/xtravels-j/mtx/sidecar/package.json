@@ -38,6 +38,9 @@
         "synonyms": {
           "connect_mode": "dynamic"
         }
+      },
+      "audit-log": {
+        "kind": "audit-log-to-console"
       }
     }
   }

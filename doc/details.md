@@ -301,7 +301,9 @@ log into its MTX sidecar:
 2. bind an SAP Audit Log Service instance (service `auditlog`) to the sidecar module in `mta.yaml`.
 
 In development (no binding) the plugin logs to the console; in production it writes to the bound
-service. The `test/e2e/xtravels*` sample apps show a complete setup.
+service. The `test/e2e/xtravels*` sample apps are deliberately configured to log to the console (no
+service binding) to keep their setup simple; the [test README](../test/README.md#audit-logging-in-the-samples)
+explains how to wire a real SAP Audit Log Service.
 
 ### Availability and failure handling
 
