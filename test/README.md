@@ -106,7 +106,7 @@ and [xtravels](https://github.com/capire/xtravels) for the end-2-end test _syn-c
 and for the queries in _syn-config.http_.
 
 The apps are reduced to the bare minimum needed for testing the synonyms (no UI, no actions, no custom code).
-They represent the final state of the [walkthrough](../../doc/walkthrough.md), i.e. xflights exports
+They represent the final state of the [walkthrough](../doc/walkthrough.md), i.e. xflights exports
 a data service for synonyms, and xtravels already consumes it. The apps are ready to be deployed as
 multi-tenant apps to CF. For both apps, run
 ```sh
@@ -132,7 +132,7 @@ cf undeploy capire.xtravels-j --delete-services   # before deploying xtravels
 #### Audit logging in the samples
 
 The `connect` / `unconnect` config-change actions are audited (see
-[Audit logging](../../doc/details.md#audit-logging)). To keep the sample setup simple, both consumer
+[Audit logging](../doc/details.md#audit-logging)). To keep the sample setup simple, both consumer
 sidecars are configured to write audit entries to the **application log** instead of a real service,
 via a kind override in `mtx/sidecar/package.json`:
 
