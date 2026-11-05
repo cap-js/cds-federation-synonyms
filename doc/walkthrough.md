@@ -465,7 +465,7 @@ https://sf4-cdsruntime-sflight-dev-xtravels.cfapps.sap.hana.ondemand.com/odata/v
 You should see the data coming directly from the xflights app - the synonyms are connected.
 
 
-### Deferring the connection
+### Dynamic connection control
 
 By default a mapped service manager's synonyms are connected on every deployment. If instead you want
 to decide at runtime when they are connected - e.g. connect only once the provider tenant is ready, or

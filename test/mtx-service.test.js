@@ -296,6 +296,7 @@ describe('ConfigService audit logging', () => {
     const sec = securityEvents()
     expect(sec).to.have.lengthOf(1)
     expect(sec[0].data.tenant).to.equal('$PROVIDER')          // written to the provider account
+    expect(sec[0].data.data.object_type).to.equal('cds.dataproducts.synonyms.Registry')
     expect(sec[0].data.data.action).to.equal('connect')
     expect(sec[0].data.data.tenant).to.equal('t1')            // app tenant preserved in the event data
     expect(sec[0].data.data.service_manager).to.equal('sm-unknown')
@@ -307,6 +308,7 @@ describe('ConfigService audit logging', () => {
     addSrvConfig('svc-a', 'sm-a'); addSmConfig('sm-a', { connect_mode: 'dynamic' })
     await expectReject('connect', { tenant: 't1', providerServiceManager: 'sm-a', providerTenant: 'pt1' }, 'providerTenant not allowed')
     const sec = securityEvents()[0]
+    expect(sec.data.data.object_type).to.equal('cds.dataproducts.synonyms.Registry')
     expect(sec.data.data.provider_tenant).to.equal('pt1')
     expect(sec.data.data.reason).to.include('providerTenant not allowed')
   })

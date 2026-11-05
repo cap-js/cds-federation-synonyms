@@ -290,7 +290,7 @@ via the [`@cap-js/audit-logging`](https://github.com/cap-js/audit-logging) plugi
 - a rejected `connect` (unknown SM, statically-controlled SM, or a disallowed `provider_tenant`)
   emits a `SecurityEvent` recording the attempt.
 
-This is only relevant for `deferred` SMs (the ones the API can connect/unconnect).
+This is only relevant for `dynamic` SMs (the ones the API can connect/unconnect).
 
 ### Enabling it
 
@@ -307,7 +307,7 @@ service. The `test/e2e/xtravels*` sample apps show a complete setup.
 
 Audit logging is mandatory for these operations: if no audit log target is configured or
 reachable, `connect` / `unconnect` are **rejected** (HTTP 503) rather than performed unaudited.
-Read-only actions (`getConfig`, `check`, status) are unaffected, and an app with no `deferred` SM
+Read-only actions (`getConfig`, `check`, status) are unaffected, and an app with no `dynamic` SM
 does not need the audit log at all.
 
 ### What is recorded
@@ -317,6 +317,50 @@ the audit log binding); the affected consumer tenant is preserved in the event's
 recorded actor is the **technical client** of the caller - the API requires the `internal-user`
 role and is called with a service token, so the entry identifies the calling client, not an
 individual person.
+
+#### Successful connect / unconnect → `ConfigurationModified`
+
+A `ConfigurationModified` event is written when a `connect` or `unconnect` operation changes the
+Registry (upsert or delete). An `unconnect` for an SM that is not currently connected is a no-op
+and produces no entry.
+
+```
+object.type:  cds.dataproducts.synonyms.Registry
+object.id:
+  tenant:                    <subscriber tenant ID>
+  provider_service_manager:  <SM name>
+attributes:   (only fields whose value actually changed)
+  provider_service_manager:  null → <SM name>   (first connect; omitted on re-connect)
+                             <SM name> → null   (unconnect)
+  provider_tenant:           null → <value>     (connect with providerTenant; omitted when unchanged)
+                             <value> → null     (unconnect, or connect that clears it)
+```
+
+#### Rejected connect → `SecurityEvent`
+
+A `SecurityEvent` is written when a `connect` call is rejected for one of the following policy
+reasons (the tenant was resolved, but the operation was denied):
+
+| Reason | `reason` field value |
+|---|---|
+| SM parameter absent or blank | `providerServiceManager parameter missing` |
+| SM not in the static config | `unknown service manager (not statically declared): <sm>` |
+| SM has `connect_mode: static` | `service manager is statically controlled; connect/unconnect not allowed: <sm>` |
+| `providerTenant` passed but `allow-api-provider-tenant` not set | `providerTenant not allowed for this service manager (allow-api-provider-tenant is not set): <sm>` |
+
+```
+data:
+  object_type:      cds.dataproducts.synonyms.Registry
+  action:           "connect"
+  reason:           <one of the messages above>
+  tenant:           <subscriber tenant ID>
+  service_manager:  <SM name, or null if absent/blank>
+  provider_tenant:  <requested value, or null>
+```
+
+Rejections that happen before the tenant is resolved (missing or unknown `tenant` parameter) are
+not audited; they are recorded in the application log only. `unconnect` rejections are never
+audited (the operation only deletes rows, so no policy check is applied).
 
 ### Testing without the real service
 
