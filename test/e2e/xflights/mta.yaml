@@ -20,8 +20,6 @@ modules:
       buildpack: nodejs_buildpack
     build-parameters:
       builder: npm
-    properties:
-      NODE_VERSION: ">=24.22.1"
     provides:
       - name: srv-api # required by consumers of CAP services (e.g. approuter)
         properties:
@@ -74,8 +72,6 @@ modules:
       instances: 1
       memory: 256M
       disk-quota: 512M
-    properties:
-      NODE_VERSION: ">=24.22.1"
     hooks:
       - name: upgrade-all
         type: task
