@@ -280,6 +280,127 @@ otherwise `connect` rejects any non-null `providerTenant` (HTTP 422).
 > caller-supplied tenant is accepted at all.
 
 
+## Audit logging
+
+The security-critical `connect` / `unconnect` actions are recorded in the SAP Audit Log Service
+via the [`@cap-js/audit-logging`](https://github.com/cap-js/audit-logging) plugin:
+
+- a successful `connect` / `unconnect` emits a `ConfigurationModified` event with the affected
+  service manager and the before/after `provider_service_manager` / `provider_tenant`;
+- a rejected `connect` that attempts to set a disallowed `provider_tenant` emits a `SecurityEvent`
+  recording the attempt (other rejections are logged to the application log only, not audited).
+
+This is only relevant for `dynamic` SMs (the ones the API can connect/unconnect).
+
+### Enabling it
+
+A plugin cannot add a dependency or a binding to the host app, so each consumer wires the audit
+log into its MTX sidecar:
+
+1. add `@cap-js/audit-logging` to the sidecar's dependencies (`mtx/sidecar/package.json`);
+2. bind an SAP Audit Log Service instance (service `auditlog`) to the sidecar module in `mta.yaml`.
+
+In development (no binding) the plugin logs to the console; in production it writes to the bound
+service. The `test/e2e/xtravels*` sample apps are deliberately configured to log to the console (no
+service binding) to keep their setup simple; the [test README](../test/README.md#audit-logging-in-the-samples)
+explains how to wire a real SAP Audit Log Service.
+
+### Availability and failure handling
+
+Audit logging is best-effort: if no audit log target is configured or reachable at startup, the
+plugin logs a warning to the application log and `connect` / `unconnect` proceed without an audit
+trail. If the audit log write fails after the operation has already committed, the failure is also
+logged as a warning and the operation result stands.
+
+Audit entries are delivered asynchronously through the plugin's outbox: the operation enqueues the
+entry and returns, and the outbox delivers it in the background (with retries). An entry that cannot
+be delivered after the outbox exhausts its retries is dead-lettered by the outbox, not surfaced to
+the caller, so a successful operation may, in rare cases, end up without a persisted audit entry.
+
+This means the audit log is strongly recommended in production but is not a hard gate. Operators
+that require guaranteed audit coverage should monitor for the warning message
+`audit log unavailable` in the application log, monitor the outbox for dead-lettered messages, and
+ensure the Audit Log Service is bound before tenants can invoke `connect` / `unconnect`.
+
+Read-only actions (`getConfig`, `check`, status) are unaffected, and an app with no `dynamic` SM
+does not need the audit log at all.
+
+### What is recorded
+
+Entries are written to the **provider account's** audit log (the subaccount that hosts the app and
+the audit log binding); the affected consumer tenant is preserved in the event's object id. The
+recorded actor is the **technical client** of the caller - the API requires the `internal-user`
+role and is called with a service token, so the entry identifies the calling client, not an
+individual person.
+
+#### Successful connect / unconnect → `ConfigurationModified`
+
+A `ConfigurationModified` event is written when a `connect` or `unconnect` operation changes the
+Registry (upsert or delete). Operations that change nothing produce no entry: an `unconnect` for an
+SM that is not currently connected, and a `connect` that repeats the SM's current values, are both
+no-ops and are not recorded.
+
+```
+object.type:  cds.dataproducts.synonyms.Registry
+object.id:
+  tenant:                    <subscriber tenant ID>
+  provider_service_manager:  <SM name>
+attributes:   (only fields whose value actually changed)
+  provider_service_manager:  null → <SM name>   (first connect; omitted on re-connect)
+                             <SM name> → null   (unconnect)
+  provider_tenant:           null → <value>     (connect with providerTenant; omitted when unchanged)
+                             <value> → null     (unconnect, or connect that clears it)
+```
+
+#### Rejected connect → `SecurityEvent`
+
+A `SecurityEvent` is written when a `connect` call is rejected because it attempts to set a
+`providerTenant` that the SM's policy does not grant. This is a privilege-boundary violation and is
+worth recording for forensics:
+
+| Reason | `reason` field value |
+|---|---|
+| `providerTenant` passed but `allow-api-provider-tenant` not set | `providerTenant not allowed` |
+
+```
+data:
+  object_type:      cds.dataproducts.synonyms.Registry
+  action:           "connect"
+  reason:           "providerTenant not allowed"
+  tenant:           <subscriber tenant ID>
+  service_manager:  <SM name>
+  provider_tenant:  <requested value>
+```
+
+Other rejections are **not** audited; they are recorded in the application log only:
+
+- unknown SM (not in the static config) and statically-controlled SM (`connect_mode: static`): these
+  are typo-prone configuration mistakes, not security-relevant attempts;
+- missing/blank `providerServiceManager` parameter;
+- rejections that happen before the tenant is resolved (missing or unknown `tenant` parameter).
+
+`unconnect` rejections are never audited (the operation only deletes rows, so no policy check is
+applied).
+
+### Testing without the real service
+
+To test the audit flow locally or in a deployed app without provisioning an SAP Audit Log Service
+instance, set the sidecar's audit-log kind to `audit-log-to-console`:
+
+```json
+// mtx/sidecar/.cdsrc.json  (or package.json cds block)
+{
+  "requires": {
+    "audit-log": { "kind": "audit-log-to-console" }
+  }
+}
+```
+
+With this setting the plugin writes entries to the application log instead of a durable service.
+The `connect` / `unconnect` operations proceed normally, so you can verify the full flow end-to-end.
+Note that `audit-log-to-console` is for development only and is **not** a tamper-proof audit trail.
+
+
 ## Deploy to HANA
 
 ### Provider

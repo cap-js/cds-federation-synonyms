@@ -106,7 +106,7 @@ and [xtravels](https://github.com/capire/xtravels) for the end-2-end test _syn-c
 and for the queries in _syn-config.http_.
 
 The apps are reduced to the bare minimum needed for testing the synonyms (no UI, no actions, no custom code).
-They represent the final state of the [walkthrough](../../doc/walkthrough.md), i.e. xflights exports
+They represent the final state of the [walkthrough](../doc/walkthrough.md), i.e. xflights exports
 a data service for synonyms, and xtravels already consumes it. The apps are ready to be deployed as
 multi-tenant apps to CF. For both apps, run
 ```sh
@@ -128,6 +128,43 @@ switching from one to the other, undeploy the currently deployed one first, e.g.
 cf undeploy capire.xtravels   --delete-services   # before deploying xtravels-j
 cf undeploy capire.xtravels-j --delete-services   # before deploying xtravels
 ```
+
+#### Audit logging in the samples
+
+The `connect` / `unconnect` config-change actions are audited (see
+[Audit logging](../doc/details.md#audit-logging)). To keep the sample setup simple, both consumer
+sidecars are configured to write audit entries to the **application log** instead of a real service,
+via a kind override in `mtx/sidecar/package.json`:
+
+```json
+"requires": {
+  "audit-log": { "kind": "audit-log-to-console" }
+}
+```
+
+With this, no SAP Audit Log Service needs to be provisioned, and the entries show up in
+`cf logs xtravels-mtx`. Note that `audit-log-to-console` is for development only and is **not** a
+tamper-proof audit trail.
+
+To wire a **real** SAP Audit Log Service for the samples instead:
+
+1. remove the `audit-log` kind override from `mtx/sidecar/package.json` so the plugin falls back to
+   its default (console when running locally, the bound service when deployed);
+2. in `mta.yaml`, add the managed-service resource back and require it in the `xtravels-mtx` module:
+   ```yaml
+   modules:
+     - name: xtravels-mtx
+       requires:
+         - name: xtravels-audit-log
+   resources:
+     - name: xtravels-audit-log
+       type: org.cloudfoundry.managed-service
+       parameters:
+         service: auditlog
+         service-plan: oauth2     # use a plan your subaccount is entitled to
+   ```
+3. redeploy. Entries are then written to the provider subaccount's audit log and can be read with the
+   SAP Audit Log Viewer or the `auditlog-management` retrieval API.
 
 
 ## Variables and Tokens

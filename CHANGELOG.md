@@ -8,6 +8,11 @@
 
 ### Added
 
+- Audit logging of the `connect` / `unconnect` config-change actions via `@cap-js/audit-logging`
+  (successful changes as `ConfigurationModified`, a `connect` that attempts to set a disallowed
+  `provider_tenant` as `SecurityEvent`). Audit logging is best-effort: if no audit log is
+  configured or reachable, the actions still proceed and a warning is written to the application
+  log. See [Audit logging](doc/details.md#audit-logging).
 - Static config validation: at MTX sidecar startup the plugin warns about misconfigured `synonyms`
   entries (unrecognized keys, `allow-api-provider-tenant` on a statically connected SM, orphaned blocks).
 
@@ -31,6 +36,6 @@
 ### Migration notes
 
 - Pre-1.0 and experimental: no compatibility is guaranteed. Upgrading an existing deployment across
-  the `Registry` schema change is **not supported in place** — the old service-keyed rows cannot be
+  the `Registry` schema change is **not supported in place**: the old service-keyed rows cannot be
   converted to the new SM-keyed primary key, so a clean redeploy is required. Only the stored
   connect-state is lost (re-establish it via the `connect` API); no business data is affected.

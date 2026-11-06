@@ -83,7 +83,9 @@ describe('PlugIntoMtx - before deploy handler', () => {
     ds = makeDeploymentService()
     cds.services['cds.xt.DeploymentService'] = ds
     PlugIntoMtx()
-    cds.emit('served')
+    // pass an (empty) services list: other plugins' 'served' handlers (e.g.
+    // @cap-js/audit-logging) iterate the argument and fail on undefined
+    cds.emit('served', [])
   })
 
   afterEach(async () => {

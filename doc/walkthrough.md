@@ -465,7 +465,7 @@ https://sf4-cdsruntime-sflight-dev-xtravels.cfapps.sap.hana.ondemand.com/odata/v
 You should see the data coming directly from the xflights app - the synonyms are connected.
 
 
-### Deferring the connection
+### Dynamic connection control
 
 By default a mapped service manager's synonyms are connected on every deployment. If instead you want
 to decide at runtime when they are connected - e.g. connect only once the provider tenant is ready, or
@@ -490,6 +490,10 @@ mock tables (querying `.../odata/v4/Travel/Flights` returns the mock data from t
 files) until you connect them via the MTX sidecar `synonymapi` in xtravels-mtx. `connect`/`unconnect`
 operate on the whole service manager - all imported services mapped to it (here
 `sap.capire.flights.FlightsService_syn`) are switched together.
+
+
+Note: Configuring an audit log for the MTX sidecar is strongly recommended so that `connect` /
+`unconnect` are recorded, but it is not required for them to work. See [Audit logging](details.md#audit-logging).
 
 Note: The requests shown here are lacking authorization details. See [the test README](../test/README.md) for
 more info on tokens and [complete example requests](../test/syn-config.http).
