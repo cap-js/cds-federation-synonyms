@@ -85,6 +85,7 @@ modules:
         - name: xtravels-srv
     properties:
       DEBUG: cds-federation-synonyms
+      NODE_VERSION: ">=24.22.1"
     parameters:
       instances: 1
       memory: 256M

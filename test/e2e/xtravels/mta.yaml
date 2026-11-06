@@ -22,6 +22,8 @@ modules:
       memory: 1024M
     build-parameters:
       builder: npm
+    properties:
+      NODE_VERSION: ">=24.22.1"
     provides:
       - name: srv-api # required by consumers of CAP services (e.g. approuter)
         properties:
@@ -73,6 +75,7 @@ modules:
       builder: npm
     properties:
       DEBUG: cds-federation-synonyms
+      NODE_VERSION: ">=24.22.1"
     parameters:
       instances: 1
       memory: 256M
