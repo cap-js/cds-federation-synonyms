@@ -36,7 +36,8 @@
         }
       },
       "audit-log": {
-        "kind": "audit-log-to-console"
+        "kind": "audit-log-to-console",
+        "subscriptionDependency": false
       }
     }
   }
