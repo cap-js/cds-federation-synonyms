@@ -391,14 +391,17 @@ instance, set the sidecar's audit-log kind to `audit-log-to-console`:
 // mtx/sidecar/.cdsrc.json  (or package.json cds block)
 {
   "requires": {
-    "audit-log": { "kind": "audit-log-to-console" }
+    "audit-log": { "kind": "audit-log-to-console", "subscriptionDependency": false }
   }
 }
 ```
 
 With this setting the plugin writes entries to the application log instead of a durable service.
 The `connect` / `unconnect` operations proceed normally, so you can verify the full flow end-to-end.
-Note that `audit-log-to-console` is for development only and is **not** a tamper-proof audit trail.
+`subscriptionDependency: false` stops the sidecar from declaring the console target as a SaaS
+dependency at subscription time, which would otherwise fail (no bound service, so its `uaa` cannot
+resolve). Note that `audit-log-to-console` is for development only and is **not** a tamper-proof
+audit trail.
 
 
 ## Deploy to HANA

@@ -138,12 +138,14 @@ via a kind override in `mtx/sidecar/package.json`:
 
 ```json
 "requires": {
-  "audit-log": { "kind": "audit-log-to-console" }
+  "audit-log": { "kind": "audit-log-to-console", "subscriptionDependency": false }
 }
 ```
 
 With this, no SAP Audit Log Service needs to be provisioned, and the entries show up in
-`cf logs xtravels-mtx`. Note that `audit-log-to-console` is for development only and is **not** a
+`cf logs xtravels-mtx`. `subscriptionDependency: false` stops the sidecar from declaring the console
+target as a SaaS dependency at subscription time, which would otherwise fail (no bound service, so
+its `uaa` cannot resolve). Note that `audit-log-to-console` is for development only and is **not** a
 tamper-proof audit trail.
 
 To wire a **real** SAP Audit Log Service for the samples instead:
