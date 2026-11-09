@@ -1,5 +1,8 @@
 {
   "name": "xflights-mtx",
+  "engines": {
+    "node": "^24.22.1"
+  },
   "dependencies": {
     "@cap-js/hana": "^3",
     "@sap/cds": "^10",
@@ -8,9 +11,6 @@
   },
   "devDependencies": {
     "@cap-js/sqlite": "^3"
-  },
-  "engines": {
-    "node": "^24"
   },
   "scripts": {
     "start": "cds-serve"

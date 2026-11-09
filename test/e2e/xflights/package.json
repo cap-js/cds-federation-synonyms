@@ -5,6 +5,9 @@
   "scripts": {
     "start": "cds-serve"
   },
+  "engines": {
+    "node": "^24.22.1"
+  },
   "dependencies": {
     "@cap-js/cds-federation-synonyms": "file:../cap-js-cds-federation-synonyms-0.0.1.tgz",
     "@cap-js/hana": "^3",
