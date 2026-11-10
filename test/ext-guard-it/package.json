@@ -1,0 +1,21 @@
+{
+  "name": "ext-guard-it-app",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@sap/cds-mtxs": "*"
+  },
+  "cds": {
+    "requires": {
+      "db": { "kind": "sqlite" },
+      "auth": {
+        "kind": "mocked-auth",
+        "users": {
+          "dev_t1": { "tenant": "t1", "roles": ["cds.ExtensionDeveloper", "internal-user"] }
+        }
+      },
+      "multitenancy": true,
+      "extensibility": true
+    }
+  }
+}

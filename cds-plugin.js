@@ -8,6 +8,8 @@ LOG.debug('===== cds-plugin.js is running');
 
 require('./lib/server.js')()  // run the code that registers the mtx deploy hooks
 
+require('./lib/extension-guard.js')()  // reject extensions that contribute federation annotations
+
 if (cds?.env?.data_integration === false) {
   LOG.info('===== build-plugin.js deactivated');
 }
