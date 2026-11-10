@@ -6,6 +6,7 @@ const os = require('os')
 const fs = require('fs')
 const path = require('path')
 const PlugIntoMtx = require('../lib/server')
+const { REGISTRY } = require('../lib/config-helper')
 
 cds.test().in(__dirname + '/..')
 
@@ -58,7 +59,7 @@ function addSmConfig(sm, { connect_mode, allowApiProviderTenant } = {}) {
 }
 // per-SM connect state (presence = connected)
 function writeConfigTable(sm, provider_tenant = null) {
-  return INSERT.into('cds.dataproducts.synonyms.Registry').entries({ provider_service_manager: sm, provider_tenant })
+  return INSERT.into(REGISTRY).entries({ provider_service_manager: sm, provider_tenant })
 }
 
 
@@ -89,7 +90,7 @@ describe('PlugIntoMtx - before deploy handler', () => {
   })
 
   afterEach(async () => {
-    await DELETE.from('cds.dataproducts.synonyms.Registry')
+    await DELETE.from(REGISTRY)
     // Remove any synonym mapping / SM entries added by the test (keep the db binding)
     for (const [k, v] of Object.entries(cds.env.requires)) {
       if (k === 'db') continue

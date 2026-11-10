@@ -13,7 +13,7 @@ jest.mock('../lib/status-sql', () => ({
   ])
 }))
 
-const { getResolvedConfig, checkService, getSmConfig, validateConfig } = require('../lib/config-helper')
+const { getResolvedConfig, checkService, getSmConfig, validateConfig, REGISTRY } = require('../lib/config-helper')
 
 // Boot in the project root so @cap-js/sqlite (nested under cds-dk) can be resolved
 cds.test().in(__dirname + '/..')
@@ -47,14 +47,14 @@ function addSmConfig(sm, { connect_mode, allowApiProviderTenant } = {}) {
 }
 // write per-SM connect state
 function writeConfigTable(sm, provider_tenant = null) {
-  return INSERT.into('cds.dataproducts.synonyms.Registry').entries({ provider_service_manager: sm, provider_tenant })
+  return INSERT.into(REGISTRY).entries({ provider_service_manager: sm, provider_tenant })
 }
 
 
 describe('getResolvedConfig()', () => {
 
   beforeEach(async () => {
-    await DELETE.from('cds.dataproducts.synonyms.Registry')
+    await DELETE.from(REGISTRY)
     cleanupRequires()
   })
 
@@ -218,7 +218,7 @@ describe('getResolvedConfig()', () => {
 describe('checkService()', () => {
 
   beforeEach(async () => {
-    await DELETE.from('cds.dataproducts.synonyms.Registry')
+    await DELETE.from(REGISTRY)
     cleanupRequires()
   })
 
