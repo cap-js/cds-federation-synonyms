@@ -71,6 +71,7 @@ describe('extension-guard: offendingServices', () => {
   })
 
   it('does NOT flag @cds.external changes on a non-via-synonym service', () => {
+    // deliberate: @cds.external is a general annotation; we only guard it on federated services
     expect(offendingServices(model({ 'base.P': svc() }), model({ 'base.P': svc({ '@cds.external': true }) }))).to.deep.equal([])
   })
 

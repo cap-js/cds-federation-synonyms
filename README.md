@@ -169,10 +169,11 @@ above, and restrict access to the `internal-user`-protected API accordingly.
 
 Which services take part in synonym federation - and whether a service acts as producer or
 consumer - is an application-operator decision, declared in the base model via the
-`@data.product: 'via-synonym'` and `@cds.external` annotations. MTX extensions cannot change this:
-an extension that adds, removes or alters those annotations on a service, or adds a new federated
-service, is rejected when it is pushed/activated. This stops an extension developer from exposing or
-redirecting federated data that the operator never sanctioned.
+`@data.product: 'via-synonym'` and `@cds.external` annotations. MTX extensions cannot change whether
+or how a service is federated: an extension that makes a service synonym-federated, stops a federated
+service being federated, or switches a federated service between producer and consumer is rejected
+when it is pushed/activated. This stops an extension developer from exposing or redirecting federated
+data that the operator never sanctioned.
 
 ### Audit logging
 
