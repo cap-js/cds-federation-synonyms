@@ -2,61 +2,62 @@
 
 const cds = require('@sap/cds')
 const { expect } = cds.test.chai
-const { findOffendingServices } = require('../lib/extension-guard')
+const { offendingServices } = require('../lib/extension-guard')
 
 // Pure test of the detection predicate. No MTX, no services, no deployment.
-// Input shape matches ModelProviderService.getExtensions: { definitions, extensions }.
-// The real enforcement chain (push -> validate -> 422) is covered by the integration test.
+// offendingServices(baselineCsn, mergedCsn) returns services that have the federation combo
+// (@data.product:'via-synonym' + @cds.external) in the merged model but not in the baseline -
+// i.e. the pending extension introduced the combo.
 
 const svc = (extra = {}) => ({ kind: 'service', ...extra })
+const COMBO = { '@data.product': 'via-synonym', '@cds.external': true }
+const model = (definitions = {}) => ({ definitions })
 
-describe('extension-guard: findOffendingServices', () => {
+describe('extension-guard: offendingServices', () => {
 
-  it('flags a new service definition carrying both federation annotations', () => {
-    const extCsn = { definitions: { 'ext.Evil': svc({ '@data.product': 'via-synonym', '@cds.external': true }) } }
-    expect(findOffendingServices(extCsn)).to.deep.equal(['ext.Evil'])
+  it('flags a service that gains the full combo (new service from the extension)', () => {
+    expect(offendingServices(model(), model({ 'ext.Evil': svc(COMBO) }))).to.deep.equal(['ext.Evil'])
   })
 
-  it('flags an annotate of an existing service that adds both annotations', () => {
-    const extCsn = { extensions: [{ annotate: 'base.Data', '@data.product': 'via-synonym', '@cds.external': true }] }
-    expect(findOffendingServices(extCsn)).to.deep.equal(['base.Data'])
+  it('flags the split case: baseline has @cds.external only, extension adds @data.product', () => {
+    const baseline = model({ 'base.Data': svc({ '@cds.external': true }) })
+    const merged = model({ 'base.Data': svc(COMBO) })
+    expect(offendingServices(baseline, merged)).to.deep.equal(['base.Data'])
   })
 
-  it('flags when the two annotations are contributed across separate extend/annotate entries on the same target', () => {
-    const extCsn = { extensions: [
-      { extend: 'base.Data', '@cds.external': true },
-      { annotate: 'base.Data', '@data.product': 'via-synonym' }
-    ] }
-    expect(findOffendingServices(extCsn)).to.deep.equal(['base.Data'])
+  it('flags the split case: baseline has @data.product only, extension adds @cds.external', () => {
+    const baseline = model({ 'base.Export': svc({ '@data.product': 'via-synonym' }) })
+    const merged = model({ 'base.Export': svc(COMBO) })
+    expect(offendingServices(baseline, merged)).to.deep.equal(['base.Export'])
   })
 
-  it('does NOT flag a service with only @data.product and no @cds.external (initial both-rule)', () => {
-    const extCsn = { definitions: { 'ext.Export': svc({ '@data.product': 'via-synonym' }) } }
-    expect(findOffendingServices(extCsn)).to.deep.equal([])
+  it('does NOT flag a service that already had the combo in the baseline', () => {
+    const baseline = model({ 'base.Fed': svc(COMBO) })
+    const merged = model({ 'base.Fed': svc(COMBO) })
+    expect(offendingServices(baseline, merged)).to.deep.equal([])
+  })
+
+  it('does NOT flag when only @data.product is present in merged (no @cds.external)', () => {
+    expect(offendingServices(model(), model({ 'ext.Export': svc({ '@data.product': 'via-synonym' }) }))).to.deep.equal([])
   })
 
   it('does NOT flag @data.product with a different value', () => {
-    const extCsn = { definitions: { 'ext.Other': svc({ '@data.product': 'something-else', '@cds.external': true }) } }
-    expect(findOffendingServices(extCsn)).to.deep.equal([])
+    const merged = model({ 'ext.Other': svc({ '@data.product': 'something-else', '@cds.external': true }) })
+    expect(offendingServices(model(), merged)).to.deep.equal([])
   })
 
-  it('does NOT flag a non-service definition carrying the annotations', () => {
-    const extCsn = { definitions: { 'ext.Entity': { kind: 'entity', '@data.product': 'via-synonym', '@cds.external': true } } }
-    expect(findOffendingServices(extCsn)).to.deep.equal([])
+  it('does NOT flag a non-service definition carrying the combo', () => {
+    expect(offendingServices(model(), model({ 'ext.Entity': { kind: 'entity', ...COMBO } }))).to.deep.equal([])
   })
 
-  it('reports each offender once when several are present', () => {
-    const extCsn = {
-      definitions: { 'ext.A': svc({ '@data.product': 'via-synonym', '@cds.external': true }) },
-      extensions: [{ annotate: 'base.B', '@data.product': 'via-synonym', '@cds.external': true }]
-    }
-    expect(findOffendingServices(extCsn).sort()).to.deep.equal(['base.B', 'ext.A'])
+  it('reports each newly-federated service once', () => {
+    const merged = model({ 'ext.A': svc(COMBO), 'base.B': svc(COMBO) })
+    expect(offendingServices(model(), merged).sort()).to.deep.equal(['base.B', 'ext.A'])
   })
 
   it('returns [] and does not throw on empty / missing input', () => {
-    expect(findOffendingServices({})).to.deep.equal([])
-    expect(findOffendingServices({ definitions: {}, extensions: [] })).to.deep.equal([])
-    expect(findOffendingServices(undefined)).to.deep.equal([])
-    expect(findOffendingServices(null)).to.deep.equal([])
+    expect(offendingServices(model(), model())).to.deep.equal([])
+    expect(offendingServices(undefined, undefined)).to.deep.equal([])
+    expect(offendingServices(null, null)).to.deep.equal([])
   })
 })
