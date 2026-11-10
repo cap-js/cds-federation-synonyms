@@ -19,6 +19,11 @@ describe('extension-guard: offendingServices', () => {
     expect(offendingServices(model(), model({ 'ext.Evil': svc(COMBO) }))).to.deep.equal(['ext.Evil'])
   })
 
+  it('flags a truthy non-boolean @cds.external (matches the deploy-path predicate)', () => {
+    const merged = model({ 'ext.Evil': svc({ '@data.product': 'via-synonym', '@cds.external': 1 }) })
+    expect(offendingServices(model(), merged)).to.deep.equal(['ext.Evil'])
+  })
+
   it('flags the split case: baseline has @cds.external only, extension adds @data.product', () => {
     const baseline = model({ 'base.Data': svc({ '@cds.external': true }) })
     const merged = model({ 'base.Data': svc(COMBO) })
