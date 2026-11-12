@@ -2,7 +2,7 @@
 
 const cds = require('@sap/cds')
 const { expect } = cds.test.chai
-const { offendingServices, offendingRegistryReaders, registryCsvFiles } = require('../lib/extension-guard')
+const { offendingServices, offendingRegistryReaders, registryCsvFiles, mtxsVersionSufficient } = require('../lib/extension-guard')
 const { REGISTRY } = require('../lib/config-helper')
 
 // Pure test of the detection predicate. No MTX, no services, no deployment.
@@ -161,6 +161,26 @@ describe('extension-guard: offendingRegistryReaders', () => {
   it('returns [] and does not throw on empty / missing input', () => {
     expect(offendingRegistryReaders(model(), model())).to.deep.equal([])
     expect(offendingRegistryReaders(undefined, undefined)).to.deep.equal([])
+  })
+})
+
+// The guard requires @sap/cds-mtxs >= 4.2.0 (the version that added the protections it builds on);
+// on anything older it blocks extension activation. Pure test of the version predicate.
+describe('extension-guard: mtxsVersionSufficient', () => {
+  it('accepts 4.2.0 and newer', () => {
+    for (const v of ['4.2.0', '4.2.1', '4.3.0', '4.10.0', '5.0.0', '10.1.2']) {
+      expect(mtxsVersionSufficient(v), v).to.equal(true)
+    }
+  })
+  it('rejects anything below 4.2.0', () => {
+    for (const v of ['4.1.1', '4.0.2', '4.0.0', '3.9.9']) {
+      expect(mtxsVersionSufficient(v), v).to.equal(false)
+    }
+  })
+  it('rejects unparseable / missing input', () => {
+    for (const v of ['', 'garbage', undefined, null]) {
+      expect(mtxsVersionSufficient(v)).to.equal(false)
+    }
   })
 })
 
