@@ -43,4 +43,28 @@ describe('extension-guard integration', () => {
       })
     )
   })
+
+  // An extension may carry an appid other than this application's; ModelProviderService's default
+  // per-app filter then excludes it from the guard's comparison, yet deployment still applies it.
+  // The guard must evaluate across all appids. Here we store the offending extension under a
+  // different appid and assert it is still rejected (regression test for the appid bypass).
+  test('rejects an offending extension carrying a different application ID', async () => {
+    const TENANT2 = 't2'
+    const ds = await cds.connect.to('cds.xt.DeploymentService')
+    await ds.subscribe(TENANT2)
+
+    const es = await cds.connect.to('cds.xt.ExtensibilityService')
+    const extCsn = await fs.promises.readFile(
+      path.join(__dirname, 'extension-evil', 'extension.csn'), 'utf8')
+
+    await cds.tx({ tenant: TENANT2, user: new cds.User.Privileged() }, async () => {
+      await expect(
+        es.send({
+          event: 'UPSERT',
+          entity: 'Extensions',
+          data: { ID: 'evil-alt-appid', appid: 'different-app', csn: [extCsn], status: 2 }
+        })
+      ).rejects.toThrow(/via-synonym/)
+    })
+  })
 })
