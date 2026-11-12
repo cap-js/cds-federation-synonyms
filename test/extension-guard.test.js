@@ -2,7 +2,7 @@
 
 const cds = require('@sap/cds')
 const { expect } = cds.test.chai
-const { offendingServices, registryCsvFiles } = require('../lib/extension-guard')
+const { offendingServices, offendingRegistryReaders, registryCsvFiles } = require('../lib/extension-guard')
 const { REGISTRY } = require('../lib/config-helper')
 
 // Pure test of the detection predicate. No MTX, no services, no deployment.
@@ -124,6 +124,43 @@ describe('extension-guard: registryCsvFiles', () => {
   it('returns [] and does not throw on empty / missing input', () => {
     expect(registryCsvFiles([])).to.deep.equal([])
     expect(registryCsvFiles(undefined)).to.deep.equal([])
+  })
+})
+
+// Pure test of the Registry-read predicate. An extension-introduced definition that reads the
+// connect-state table (cds.xt.synonyms.Registry) must be flagged - including the top-level UNION
+// form that cds-mtxs's own protected-namespace check misses.
+describe('extension-guard: offendingRegistryReaders', () => {
+  const REG = 'cds.xt.synonyms.Registry'
+  const sel = (name) => ({ SELECT: { from: { ref: [name] }, columns: [{ ref: ['provider_tenant'] }] } })
+  const union = (name) => ({ kind: 'entity', query: { SET: { op: 'union', all: true, args: [sel(name), sel(name)] } } })
+  const proj = (name) => ({ kind: 'entity', query: sel(name) })
+  const join = (a, b) => ({ kind: 'entity', query: { SELECT: { from: { join: 'inner', args: [{ ref: [a] }, { ref: [b] }] } } } })
+
+  it('flags a new entity reading Registry via top-level UNION (the bypass)', () => {
+    expect(offendingRegistryReaders(model(), model({ 'x.Leak': union(REG) }))).to.deep.equal(['x.Leak'])
+  })
+
+  it('flags a new entity reading Registry via a plain projection', () => {
+    expect(offendingRegistryReaders(model(), model({ 'x.Leak': proj(REG) }))).to.deep.equal(['x.Leak'])
+  })
+
+  it('flags a read via a join', () => {
+    expect(offendingRegistryReaders(model(), model({ 'x.Leak': join('ext.guard.Things', REG) }))).to.deep.equal(['x.Leak'])
+  })
+
+  it('does NOT flag a view over an unrelated entity', () => {
+    expect(offendingRegistryReaders(model(), model({ 'x.Ok': union('ext.guard.Things') }))).to.deep.equal([])
+  })
+
+  it('does NOT flag a base definition that already read Registry (not introduced by the extension)', () => {
+    const base = model({ 'base.View': proj(REG) })
+    expect(offendingRegistryReaders(base, base)).to.deep.equal([])
+  })
+
+  it('returns [] and does not throw on empty / missing input', () => {
+    expect(offendingRegistryReaders(model(), model())).to.deep.equal([])
+    expect(offendingRegistryReaders(undefined, undefined)).to.deep.equal([])
   })
 })
 

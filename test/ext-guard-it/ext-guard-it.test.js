@@ -21,6 +21,7 @@ describe('extension-guard integration', () => {
     await fs.promises.rm(path.join(__dirname, 'extension-evil.tgz'), { force: true })
     await fs.promises.rm(path.join(__dirname, 'extension-evil-feature.tgz'), { force: true })
     await fs.promises.rm(path.join(__dirname, 'extension-evil-csv.tgz'), { force: true })
+    await fs.promises.rm(path.join(__dirname, 'extension-evil-union.tgz'), { force: true })
   })
 
   test('rejects an extension that adds @data.product:via-synonym + @cds.external to a service', async () => {
@@ -112,6 +113,31 @@ describe('extension-guard integration', () => {
       expect.objectContaining({
         response: expect.objectContaining({ status: 422 }),
         message: expect.stringContaining('connect-state table')
+      })
+    )
+  })
+
+  // Read vector: an extension exposes the connect-state table (cds.xt.synonyms.Registry) through a
+  // top-level UNION view. cds-mtxs's protected-namespace check only inspects SELECT/projection, so
+  // it misses the union; the extension-guard must reject it. The fixture carries no federation
+  // annotations and no CSV, so only the read check can trip here.
+  test('rejects an extension that reads the connect-state table via a UNION view', async () => {
+    await tar.czf(path.join(__dirname, 'extension-evil-union.tgz'),
+      path.join(__dirname, 'extension-evil-union'))
+
+    const ds = await cds.connect.to('cds.xt.DeploymentService')
+    await ds.subscribe(TENANT)
+
+    const tgz = await fs.promises.readFile(path.resolve(__dirname, 'extension-evil-union.tgz'))
+
+    await expect(
+      POST('/-/cds/extensibility/push',
+        { extension: tgz.toString('base64') },
+        { auth: { username: USER } })
+    ).rejects.toThrow(
+      expect.objectContaining({
+        response: expect.objectContaining({ status: 422 }),
+        message: expect.stringContaining('read the synonym connect-state table')
       })
     )
   })
