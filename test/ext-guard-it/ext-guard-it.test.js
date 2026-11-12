@@ -20,6 +20,7 @@ describe('extension-guard integration', () => {
   afterAll(async () => {
     await fs.promises.rm(path.join(__dirname, 'extension-evil.tgz'), { force: true })
     await fs.promises.rm(path.join(__dirname, 'extension-evil-feature.tgz'), { force: true })
+    await fs.promises.rm(path.join(__dirname, 'extension-evil-csv.tgz'), { force: true })
   })
 
   test('rejects an extension that adds @data.product:via-synonym + @cds.external to a service', async () => {
@@ -86,6 +87,31 @@ describe('extension-guard integration', () => {
       expect.objectContaining({
         response: expect.objectContaining({ status: 422 }),
         message: expect.stringContaining('via-synonym')
+      })
+    )
+  })
+
+  // CSV / data vector: a data-only extension can ship a CSV targeting the connect-state table
+  // (cds.xt.synonyms.Registry). cds-mtxs does not block that with no extension-allowlist configured
+  // (the protected-namespace guard inspects only the model, not CSV data). The extension-guard must
+  // reject it. The fixture carries NO federation annotations, so only the CSV check can trip here.
+  test('rejects a data-only extension that uploads a CSV to the connect-state table', async () => {
+    await tar.czf(path.join(__dirname, 'extension-evil-csv.tgz'),
+      path.join(__dirname, 'extension-evil-csv'))
+
+    const ds = await cds.connect.to('cds.xt.DeploymentService')
+    await ds.subscribe(TENANT)
+
+    const tgz = await fs.promises.readFile(path.resolve(__dirname, 'extension-evil-csv.tgz'))
+
+    await expect(
+      POST('/-/cds/extensibility/push',
+        { extension: tgz.toString('base64') },
+        { auth: { username: USER } })
+    ).rejects.toThrow(
+      expect.objectContaining({
+        response: expect.objectContaining({ status: 422 }),
+        message: expect.stringContaining('connect-state table')
       })
     )
   })

@@ -23,10 +23,20 @@ const TENANT = 't1'
 const USER = 'dev_t1'
 
 describe('extension-guard native-worker integration', () => {
+  // This suite uses file-based sqlite, so each run leaves per-tenant db-t*.sqlite (+ WAL/SHM) on
+  // disk; stale ones from an earlier (possibly crashed) run pollute the next run. Clear them before
+  // the server boots and again after the suite, to keep runs reproducible and the tree clean.
+  const cleanTenantDbs = () => {
+    for (const f of fs.readdirSync(__dirname))
+      if (/\.sqlite(-wal|-shm)?$/.test(f)) fs.rmSync(path.join(__dirname, f), { force: true })
+  }
+
+  beforeAll(cleanTenantDbs)        // registered before cds.test() so it runs before the server boots
   const { POST } = cds.test(__dirname)
 
   afterAll(async () => {
     await fs.promises.rm(path.join(__dirname, 'extension-evil-worker.tgz'), { force: true })
+    cleanTenantDbs()
   })
 
   test('rejects an offending extension activated through a native worker', async () => {

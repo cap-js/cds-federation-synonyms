@@ -1,0 +1,9 @@
+{
+  "requires": [],
+  "definitions": {},
+  "extensions": [],
+  "meta": {
+    "flavor": "parsed"
+  },
+  "$version": "2.0"
+}

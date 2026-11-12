@@ -2,7 +2,8 @@
 
 const cds = require('@sap/cds')
 const { expect } = cds.test.chai
-const { offendingServices } = require('../lib/extension-guard')
+const { offendingServices, registryCsvFiles } = require('../lib/extension-guard')
+const { REGISTRY } = require('../lib/config-helper')
 
 // Pure test of the detection predicate. No MTX, no services, no deployment.
 // offendingServices(baselineCsn, mergedCsn) returns services whose synonym-federation state
@@ -96,6 +97,33 @@ describe('extension-guard: offendingServices', () => {
     expect(offendingServices(model(), model())).to.deep.equal([])
     expect(offendingServices(undefined, undefined)).to.deep.equal([])
     expect(offendingServices(null, null)).to.deep.equal([])
+  })
+})
+
+// Pure test of the CSV-target predicate: a data-CSV file name whose entity resolves to the
+// connect-state table (cds.xt.synonyms.Registry) must be flagged, so the guard can reject an
+// extension that writes it directly. Dashes and dots are both the FQN separator in the file name.
+describe('extension-guard: registryCsvFiles', () => {
+
+  it('flags a dash-separated Registry CSV', () => {
+    expect(registryCsvFiles(['cds.xt.synonyms-Registry.csv'])).to.deep.equal(['cds.xt.synonyms-Registry.csv'])
+  })
+
+  it('flags a dot-separated Registry CSV', () => {
+    expect(registryCsvFiles(['cds.xt.synonyms.Registry.csv'])).to.deep.equal(['cds.xt.synonyms.Registry.csv'])
+  })
+
+  it('matches the REGISTRY constant (single source of truth)', () => {
+    expect(REGISTRY).to.equal('cds.xt.synonyms.Registry')
+  })
+
+  it('ignores unrelated CSVs', () => {
+    expect(registryCsvFiles(['ext.guard-Things.csv', 'foo.csv', 'cds.xt.synonyms-Other.csv'])).to.deep.equal([])
+  })
+
+  it('returns [] and does not throw on empty / missing input', () => {
+    expect(registryCsvFiles([])).to.deep.equal([])
+    expect(registryCsvFiles(undefined)).to.deep.equal([])
   })
 })
 
