@@ -98,3 +98,28 @@ describe('extension-guard: offendingServices', () => {
     expect(offendingServices(null, null)).to.deep.equal([])
   })
 })
+
+// The guard must also cover the case where the ExtensibilityService was already served before this
+// plugin loaded (e.g. a native worker that finished cds.serve() first): serving/served listeners
+// cannot observe past events, so installExtensionGuard() installs on the current instance eagerly.
+describe('extension-guard: installExtensionGuard eager install', () => {
+  const installExtensionGuard = require('../lib/extension-guard')
+
+  const withFakeService = (srv, fn) => {
+    const key = 'cds.xt.ExtensibilityService'
+    const had = Object.prototype.hasOwnProperty.call(cds.services, key)
+    const saved = cds.services[key]
+    cds.services[key] = srv
+    try { fn() } finally {
+      if (had) cds.services[key] = saved
+      else delete cds.services[key]
+    }
+  }
+
+  it('installs after(validate) on an already-served ExtensibilityService', () => {
+    const events = []
+    const fakeSrv = { name: 'cds.xt.ExtensibilityService', after: (event) => events.push(event) }
+    withFakeService(fakeSrv, () => installExtensionGuard())
+    expect(events).to.include('validate')
+  })
+})
