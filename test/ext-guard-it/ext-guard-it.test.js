@@ -19,6 +19,7 @@ describe('extension-guard integration', () => {
 
   afterAll(async () => {
     await fs.promises.rm(path.join(__dirname, 'extension-evil.tgz'), { force: true })
+    await fs.promises.rm(path.join(__dirname, 'extension-evil-feature.tgz'), { force: true })
   })
 
   test('rejects an extension that adds @data.product:via-synonym + @cds.external to a service', async () => {
@@ -63,5 +64,29 @@ describe('extension-guard integration', () => {
         })
       ).rejects.toThrow(/via-synonym/)
     })
+  })
+
+  // Feature-toggled services (fts/<feature>/) are absent from a model requested without toggles, yet
+  // MTX's validator and deployment include them via toggles:['*']. The guard must pass toggles:['*']
+  // too, or an extension could add federation annotations to a feature service undetected.
+  test('rejects an offending extension targeting a feature-toggled service', async () => {
+    await tar.czf(path.join(__dirname, 'extension-evil-feature.tgz'),
+      path.join(__dirname, 'extension-evil-feature'))
+
+    const ds = await cds.connect.to('cds.xt.DeploymentService')
+    await ds.subscribe(TENANT)
+
+    const tgz = await fs.promises.readFile(path.resolve(__dirname, 'extension-evil-feature.tgz'))
+
+    await expect(
+      POST('/-/cds/extensibility/push',
+        { extension: tgz.toString('base64') },
+        { auth: { username: USER } })
+    ).rejects.toThrow(
+      expect.objectContaining({
+        response: expect.objectContaining({ status: 422 }),
+        message: expect.stringContaining('via-synonym')
+      })
+    )
   })
 })

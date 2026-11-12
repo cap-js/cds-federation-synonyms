@@ -15,7 +15,8 @@
         }
       },
       "multitenancy": true,
-      "extensibility": true
+      "extensibility": true,
+      "toggles": true
     }
   }
 }
