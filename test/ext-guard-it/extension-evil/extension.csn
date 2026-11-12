@@ -1,0 +1,15 @@
+{
+  "requires": [],
+  "definitions": {},
+  "extensions": [
+    {
+      "annotate": "AppService",
+      "@data.product": "via-synonym",
+      "@cds.external": true
+    }
+  ],
+  "meta": {
+    "flavor": "parsed"
+  },
+  "$version": "2.0"
+}

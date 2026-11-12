@@ -1,0 +1,51 @@
+'use strict'
+
+// Integration test for the extension guard in a NATIVE ACTIVATION WORKER
+// (cds.requires.multitenancy.jobs.nativeWorkers: true). MTX activates the extension in a worker
+// thread that calls cds.serve() without an HTTP app, so the generic 'serving' event is never
+// emitted there. The guard must therefore also install via the 'served' event, which the worker
+// does emit. Here we push an offending extension and assert the worker rejects it with 422.
+//
+// The worker loads the guard through the app's server.js (job-worker.js _local_cli_js); a real
+// deployment loads it via cds.plugins instead, but the serve/served sequence under test is the same.
+// nativeWorkers is enabled via CDS_CONFIG so this suite can share the app folder with the main-process
+// suite (which runs on in-memory sqlite); the worker needs file-based sqlite, so they do not collide.
+
+process.env.CDS_CONFIG = JSON.stringify({
+  requires: { multitenancy: { jobs: { nativeWorkers: true, workerSize: 1 } } }
+})
+process.env.NODE_ENV = 'production'
+
+const cds = require('@sap/cds/lib')
+const { fs, path, tar } = cds.utils
+
+const TENANT = 't1'
+const USER = 'dev_t1'
+
+describe('extension-guard native-worker integration', () => {
+  const { POST } = cds.test(__dirname)
+
+  afterAll(async () => {
+    await fs.promises.rm(path.join(__dirname, 'extension-evil-worker.tgz'), { force: true })
+  })
+
+  test('rejects an offending extension activated through a native worker', async () => {
+    await tar.czf(path.join(__dirname, 'extension-evil-worker.tgz'), path.join(__dirname, 'extension-evil'))
+
+    const ds = await cds.connect.to('cds.xt.DeploymentService')
+    await ds.subscribe(TENANT)
+
+    const tgz = await fs.promises.readFile(path.resolve(__dirname, 'extension-evil-worker.tgz'))
+
+    await expect(
+      POST('/-/cds/extensibility/push',
+        { extension: tgz.toString('base64') },
+        { auth: { username: USER } })
+    ).rejects.toThrow(
+      expect.objectContaining({
+        response: expect.objectContaining({ status: 422 }),
+        message: expect.stringContaining('via-synonym')
+      })
+    )
+  })
+})
