@@ -201,10 +201,15 @@ describe('extension-guard: installExtensionGuard eager install', () => {
     }
   }
 
-  it('installs after(validate) on an already-served ExtensibilityService', () => {
-    const events = []
-    const fakeSrv = { name: 'cds.xt.ExtensibilityService', after: (event) => events.push(event) }
+  it('installs after(validate) and before(UPSERT/UPDATE) on an already-served ExtensibilityService', () => {
+    const afterEvents = [], beforeEntities = []
+    const fakeSrv = {
+      name: 'cds.xt.ExtensibilityService',
+      after: (event) => afterEvents.push(event),
+      before: (_events, entity) => beforeEntities.push(entity)
+    }
     withFakeService(fakeSrv, () => installExtensionGuard())
-    expect(events).to.include('validate')
+    expect(afterEvents).to.include('validate')
+    expect(beforeEntities).to.include('Extensions')
   })
 })

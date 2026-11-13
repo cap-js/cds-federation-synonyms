@@ -117,6 +117,32 @@ describe('extension-guard integration', () => {
     )
   })
 
+  // Draft CSV bypass: a draft extension (status=1) skips the validate hook entirely, so the
+  // after('validate') CSV check never fires. An attacker can store a malicious draft with a Registry
+  // CSV, then activate a separate harmless extension - MTX's getExtCsvs reads ALL rows (incl.
+  // drafts) on deployment and would import the CSV. The guard must reject the upload itself.
+  test('rejects an extension UPSERT that stores a Registry CSV as a draft', async () => {
+    const ds = await cds.connect.to('cds.xt.DeploymentService')
+    await ds.subscribe(TENANT)
+
+    const es = await cds.connect.to('cds.xt.ExtensibilityService')
+
+    await cds.tx({ tenant: TENANT, user: new cds.User.Privileged() }, async () => {
+      await expect(
+        es.send({
+          event: 'UPSERT',
+          entity: 'Extensions',
+          data: {
+            ID: 'evil-draft-csv',
+            csn: ['{"definitions":{}}'],
+            csvs: [{ name: 'cds.xt.synonyms-Registry.csv', content: 'provider_tenant\nevil_tenant' }],
+            status: 1  // DRAFT - no validate will be called
+          }
+        })
+      ).rejects.toThrow(/connect-state table/)
+    })
+  })
+
   // Read vector: an extension exposes the connect-state table (cds.xt.synonyms.Registry) through a
   // top-level UNION view. cds-mtxs's protected-namespace check only inspects SELECT/projection, so
   // it misses the union; the extension-guard must reject it. The fixture carries no federation
