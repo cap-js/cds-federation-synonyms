@@ -23,6 +23,8 @@ to learn about the basics.
 ## Requirements
 
 * @sap/cds-dk version 9.9 or higher.
+* For a multitenant consumer, the MTX sidecar requires @sap/cds-mtxs version 4.2.0 or higher
+  (see [Extensions cannot reach synonym federation](#extensions-cannot-reach-synonym-federation)).
 * Both "provider" and "consumer" are CAP apps, using SAP HANA as database.
 * Both "provider" and "consumer" run in the same SAP HANA instance, and,
   if Native Multitenancy in SAP HANA Cloud is switched on, live in the same tenant.
@@ -165,7 +167,7 @@ its own provider data (see [Configuration](./doc/details.md#the-provider_tenant-
 it only for tenant pairings that are legitimate and within the shared trust boundary described
 above, and restrict access to the `internal-user`-protected API accordingly.
 
-### Extensions cannot change synonym federation
+### Extensions cannot reach synonym federation
 
 Which services take part in synonym federation - and whether a service acts as producer or
 consumer - is an application-operator decision, declared in the base model via the
@@ -174,6 +176,16 @@ or how a service is federated: an extension that makes a service synonym-federat
 service being federated, or switches a federated service between producer and consumer is rejected
 when it is pushed/activated. This stops an extension developer from exposing or redirecting federated
 data that the operator never sanctioned.
+
+Extensions are likewise kept away from the internal connect-state table
+(`cds.xt.synonyms.Registry`), which records which provider a tenant's synonyms resolve to. An
+extension is rejected at push/activate if it reads that table (for example through a view, including
+a `UNION`) or uploads CSV data into it. This prevents an extension from inspecting or redirecting a
+tenant's federation outside the audited `connect` / `unconnect` API.
+
+These checks run in the MTX sidecar and rely on @sap/cds-mtxs 4.2.0 or higher. If an older cds-mtxs
+is detected, the plugin cannot guarantee these protections and therefore **rejects every extension
+activation** (HTTP 422) until the sidecar is upgraded; the application itself keeps running.
 
 ### Audit logging
 

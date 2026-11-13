@@ -8,7 +8,7 @@
     "@cap-js/cds-federation-synonyms": "file:../../../cap-js-cds-federation-synonyms-0.0.1.tgz",
     "@cap-js/hana": "^3",
     "@sap/cds": "^10",
-    "@sap/cds-mtxs": "^4",
+    "@sap/cds-mtxs": "^4.2.0",
     "@sap/xssec": "^4"
   },
   "devDependencies": {

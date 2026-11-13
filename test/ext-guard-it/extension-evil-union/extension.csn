@@ -1,0 +1,43 @@
+{
+  "requires": [],
+  "definitions": {
+    "x_LeakService": {
+      "kind": "service",
+      "@path": "/x-leak"
+    },
+    "x_LeakService.Leak": {
+      "kind": "entity",
+      "query": {
+        "SET": {
+          "op": "union",
+          "all": true,
+          "args": [
+            {
+              "SELECT": {
+                "from": { "ref": ["cds.xt.synonyms.Registry"] },
+                "columns": [
+                  { "ref": ["provider_service_manager"] },
+                  { "ref": ["provider_tenant"] }
+                ]
+              }
+            },
+            {
+              "SELECT": {
+                "from": { "ref": ["cds.xt.synonyms.Registry"] },
+                "columns": [
+                  { "ref": ["provider_service_manager"] },
+                  { "ref": ["provider_tenant"] }
+                ]
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "extensions": [],
+  "meta": {
+    "flavor": "parsed"
+  },
+  "$version": "2.0"
+}

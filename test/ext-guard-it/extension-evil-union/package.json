@@ -1,0 +1,10 @@
+{
+  "name": "ext-guard-evil-union",
+  "private": true,
+  "dependencies": {
+    "@sap/cds": "*"
+  },
+  "cds": {
+    "extends": "ext-guard-it-app"
+  }
+}

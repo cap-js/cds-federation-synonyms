@@ -1,4 +1,8 @@
-namespace cds.dataproducts.synonyms;
+// Namespace 'cds.xt' is protected by MTX Extensibility: extensions cannot read (project),
+// extend, annotate or define here. This keeps the connect-state table out of reach of extension
+// developers (see doc-private/registry-protected-namespace.md).
+// Keep in sync with the REGISTRY constant in lib/config-helper.js.
+namespace cds.xt.synonyms;
 
 // this entity is part of MTX's model and the application's model
 

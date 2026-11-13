@@ -341,7 +341,7 @@ SM that is not currently connected, and a `connect` that repeats the SM's curren
 no-ops and are not recorded.
 
 ```
-object.type:  cds.dataproducts.synonyms.Registry
+object.type:  cds.xt.synonyms.Registry
 object.id:
   tenant:                    <subscriber tenant ID>
   provider_service_manager:  <SM name>
@@ -364,7 +364,7 @@ worth recording for forensics:
 
 ```
 data:
-  object_type:      cds.dataproducts.synonyms.Registry
+  object_type:      cds.xt.synonyms.Registry
   action:           "connect"
   reason:           "providerTenant not allowed"
   tenant:           <subscriber tenant ID>
