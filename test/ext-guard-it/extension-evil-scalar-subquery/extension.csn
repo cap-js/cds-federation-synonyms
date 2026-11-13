@@ -1,0 +1,32 @@
+{
+  "requires": [],
+  "definitions": {
+    "x_LeakService": {
+      "kind": "service",
+      "@path": "/x-leak-scalar"
+    },
+    "x_LeakService.Leak": {
+      "kind": "entity",
+      "query": {
+        "SELECT": {
+          "from": { "ref": ["ext.guard.Things"] },
+          "columns": [
+            { "ref": ["ID"] },
+            {
+              "SELECT": {
+                "from": { "ref": ["cds.xt.synonyms.Registry"] },
+                "columns": [{ "ref": ["provider_tenant"] }]
+              },
+              "as": "secret"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "extensions": [],
+  "meta": {
+    "flavor": "parsed"
+  },
+  "$version": "2.0"
+}

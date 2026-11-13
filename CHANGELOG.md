@@ -26,6 +26,9 @@
   the `connect` / `unconnect` actions of the MTX sidecar `ConfigService` (`/-/cds/synonymapi`).
 - The `Registry` table is keyed by `provider_service_manager` (row present = connected, no row =
   disconnected).
+- The `Registry` table moved into the protected `cds.xt.synonyms` namespace so MTX Extensibility
+  blocks extensions from reading (projecting), writing, extending or defining it. Its entity name
+  is unchanged (`Registry`); the audit `object_type` is now `cds.xt.synonyms.Registry`.
 
 ### Fixed
 
@@ -39,3 +42,7 @@
   the `Registry` schema change is **not supported in place**: the old service-keyed rows cannot be
   converted to the new SM-keyed primary key, so a clean redeploy is required. Only the stored
   connect-state is lost (re-establish it via the `connect` API); no business data is affected.
+- Likewise, moving `Registry` into the `cds.xt.synonyms` namespace renames its physical table, so an
+  in-place upgrade does not carry over existing connect-state rows (every dynamically connected SM
+  reverts to disconnected until re-connected via the `connect` API). Accepted for pre-1.0; no
+  migration is provided. No business data is affected.

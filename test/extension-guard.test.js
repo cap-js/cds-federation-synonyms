@@ -2,7 +2,8 @@
 
 const cds = require('@sap/cds')
 const { expect } = cds.test.chai
-const { offendingServices } = require('../lib/extension-guard')
+const { offendingServices, offendingRegistryReaders, registryCsvFiles, mtxsVersionSufficient } = require('../lib/extension-guard')
+const { REGISTRY } = require('../lib/config-helper')
 
 // Pure test of the detection predicate. No MTX, no services, no deployment.
 // offendingServices(baselineCsn, mergedCsn) returns services whose synonym-federation state
@@ -99,6 +100,150 @@ describe('extension-guard: offendingServices', () => {
   })
 })
 
+// Pure test of the CSV-target predicate: a data-CSV file name whose entity resolves to the
+// connect-state table (cds.xt.synonyms.Registry) must be flagged, so the guard can reject an
+// extension that writes it directly. Dashes and dots are both the FQN separator in the file name.
+describe('extension-guard: registryCsvFiles', () => {
+
+  it('flags a dash-separated Registry CSV', () => {
+    expect(registryCsvFiles(['cds.xt.synonyms-Registry.csv'])).to.deep.equal(['cds.xt.synonyms-Registry.csv'])
+  })
+
+  it('flags a dot-separated Registry CSV', () => {
+    expect(registryCsvFiles(['cds.xt.synonyms.Registry.csv'])).to.deep.equal(['cds.xt.synonyms.Registry.csv'])
+  })
+
+  it('matches the REGISTRY constant (single source of truth)', () => {
+    expect(REGISTRY).to.equal('cds.xt.synonyms.Registry')
+  })
+
+  it('ignores unrelated CSVs', () => {
+    expect(registryCsvFiles(['ext.guard-Things.csv', 'foo.csv', 'cds.xt.synonyms-Other.csv'])).to.deep.equal([])
+  })
+
+  it('returns [] and does not throw on empty / missing input', () => {
+    expect(registryCsvFiles([])).to.deep.equal([])
+    expect(registryCsvFiles(undefined)).to.deep.equal([])
+  })
+})
+
+// Pure test of the Registry-read predicate. An extension-introduced definition that reads the
+// connect-state table (cds.xt.synonyms.Registry) must be flagged - including the top-level UNION
+// form that cds-mtxs's own protected-namespace check misses.
+describe('extension-guard: offendingRegistryReaders', () => {
+  const REG = 'cds.xt.synonyms.Registry'
+  const sel = (name) => ({ SELECT: { from: { ref: [name] }, columns: [{ ref: ['provider_tenant'] }] } })
+  const union = (name) => ({ kind: 'entity', query: { SET: { op: 'union', all: true, args: [sel(name), sel(name)] } } })
+  const proj = (name) => ({ kind: 'entity', query: sel(name) })
+  const join = (a, b) => ({ kind: 'entity', query: { SELECT: { from: { join: 'inner', args: [{ ref: [a] }, { ref: [b] }] } } } })
+
+  const scalar = (name) => ({ kind: 'entity', query: { SELECT: {
+    from: { ref: ['ext.guard.Things'] },
+    columns: [{ ref: ['ID'] }, { SELECT: { from: { ref: [name] } }, as: 'secret' }]
+  } } })
+  const existsWhere = (name) => ({ kind: 'entity', query: { SELECT: {
+    from: { ref: ['ext.guard.Things'] },
+    where: ['exists', { SELECT: { from: { ref: [name] } } }]
+  } } })
+
+  it('flags a new entity reading Registry via top-level UNION (the bypass)', () => {
+    expect(offendingRegistryReaders(model(), model({ 'x.Leak': union(REG) }))).to.deep.equal(['x.Leak'])
+  })
+
+  it('flags a new entity reading Registry via a plain projection', () => {
+    expect(offendingRegistryReaders(model(), model({ 'x.Leak': proj(REG) }))).to.deep.equal(['x.Leak'])
+  })
+
+  it('flags a read via a join', () => {
+    expect(offendingRegistryReaders(model(), model({ 'x.Leak': join('ext.guard.Things', REG) }))).to.deep.equal(['x.Leak'])
+  })
+
+  it('flags a new entity reading Registry via a scalar subquery in columns', () => {
+    expect(offendingRegistryReaders(model(), model({ 'x.Leak': scalar(REG) }))).to.deep.equal(['x.Leak'])
+  })
+
+  it('flags a new entity reading Registry via an EXISTS subquery in WHERE', () => {
+    expect(offendingRegistryReaders(model(), model({ 'x.Leak': existsWhere(REG) }))).to.deep.equal(['x.Leak'])
+  })
+
+  const nestedQueries = {
+    'function arguments': { SELECT: { from: { ref: ['ext.guard.Things'] }, columns: [
+      { func: 'coalesce', args: [sel(REG), { val: '' }], as: 'secret' }
+    ] } },
+    'list expressions': { SELECT: { from: { ref: ['ext.guard.Things'] }, where: [
+      { ref: ['name'] }, 'in', { list: [sel(REG)] }
+    ] } },
+    'ORDER BY expressions': { SELECT: { from: { ref: ['ext.guard.Things'] }, orderBy: [sel(REG)] } },
+    'HAVING expressions': { SELECT: { from: { ref: ['ext.guard.Things'] }, having: ['exists', sel(REG)] } },
+    'join predicates': { SELECT: { from: { join: 'inner',
+      args: [{ ref: ['ext.guard.Things'], as: 'a' }, { ref: ['ext.guard.Things'], as: 'b' }],
+      on: [{ func: 'coalesce', args: [sel(REG), { val: '' }] }, '=', { val: 'secret' }]
+    } } },
+    'path filters': { SELECT: { from: { ref: [
+      { id: 'ext.guard.Things', where: ['exists', sel(REG)] }
+    ] } } },
+    'column path filters': { SELECT: { from: { ref: ['ext.guard.Things'] }, columns: [
+      { ref: [{ id: 'related', where: ['exists', sel(REG)] }, 'name'] }
+    ] } },
+    'a derived table': { SELECT: { from: { ...scalar(REG).query, as: 'nested' } } },
+    'nested UNION operands': { SET: { op: 'union', args: [scalar(REG).query, sel('ext.guard.Things')] } }
+  }
+
+  for (const [position, query] of Object.entries(nestedQueries)) {
+    it(`flags Registry subqueries in ${position}`, () => {
+      expect(offendingRegistryReaders(model(), model({ 'x.Leak': { kind: 'entity', query } }))).to.deep.equal(['x.Leak'])
+    })
+
+    it(`allows unrelated subqueries in ${position}`, () => {
+      const safeQuery = JSON.parse(JSON.stringify(query).replaceAll(REG, 'ext.guard.Things'))
+      expect(offendingRegistryReaders(model(), model({ 'x.Ok': { kind: 'entity', query: safeQuery } }))).to.deep.equal([])
+    })
+  }
+
+  it('checks expressions in the projection shorthand', () => {
+    const projection = scalar(REG).query.SELECT
+    expect(offendingRegistryReaders(model(), model({ 'x.Leak': { kind: 'entity', projection } }))).to.deep.equal(['x.Leak'])
+  })
+
+  it('does NOT flag a scalar subquery over an unrelated entity', () => {
+    expect(offendingRegistryReaders(model(), model({ 'x.Ok': scalar('ext.guard.Things') }))).to.deep.equal([])
+  })
+
+  it('does NOT flag a view over an unrelated entity', () => {
+    expect(offendingRegistryReaders(model(), model({ 'x.Ok': union('ext.guard.Things') }))).to.deep.equal([])
+  })
+
+  it('does NOT flag a base definition that already read Registry (not introduced by the extension)', () => {
+    const base = model({ 'base.View': proj(REG) })
+    expect(offendingRegistryReaders(base, base)).to.deep.equal([])
+  })
+
+  it('returns [] and does not throw on empty / missing input', () => {
+    expect(offendingRegistryReaders(model(), model())).to.deep.equal([])
+    expect(offendingRegistryReaders(undefined, undefined)).to.deep.equal([])
+  })
+})
+
+// The guard requires @sap/cds-mtxs >= 4.2.0 (the version that added the protections it builds on);
+// on anything older it blocks extension activation. Pure test of the version predicate.
+describe('extension-guard: mtxsVersionSufficient', () => {
+  it('accepts 4.2.0 and newer', () => {
+    for (const v of ['4.2.0', '4.2.1', '4.3.0', '4.10.0', '5.0.0', '10.1.2']) {
+      expect(mtxsVersionSufficient(v), v).to.equal(true)
+    }
+  })
+  it('rejects anything below 4.2.0', () => {
+    for (const v of ['4.1.1', '4.0.2', '4.0.0', '3.9.9']) {
+      expect(mtxsVersionSufficient(v), v).to.equal(false)
+    }
+  })
+  it('rejects unparseable / missing input', () => {
+    for (const v of ['', 'garbage', undefined, null]) {
+      expect(mtxsVersionSufficient(v)).to.equal(false)
+    }
+  })
+})
+
 // The guard must also cover the case where the ExtensibilityService was already served before this
 // plugin loaded (e.g. a native worker that finished cds.serve() first): serving/served listeners
 // cannot observe past events, so installExtensionGuard() installs on the current instance eagerly.
@@ -106,7 +251,7 @@ describe('extension-guard: installExtensionGuard eager install', () => {
   const installExtensionGuard = require('../lib/extension-guard')
 
   const withFakeService = (srv, fn) => {
-    const key = 'cds.xt.ExtensibilityService'
+    const key = srv.name
     const had = Object.prototype.hasOwnProperty.call(cds.services, key)
     const saved = cds.services[key]
     cds.services[key] = srv
@@ -116,10 +261,26 @@ describe('extension-guard: installExtensionGuard eager install', () => {
     }
   }
 
-  it('installs after(validate) on an already-served ExtensibilityService', () => {
-    const events = []
-    const fakeSrv = { name: 'cds.xt.ExtensibilityService', after: (event) => events.push(event) }
+  it('installs after(validate) and before(UPSERT/UPDATE) on an already-served ExtensibilityService', () => {
+    const afterEvents = [], beforeEntities = []
+    const fakeSrv = {
+      name: 'cds.xt.ExtensibilityService',
+      after: (event) => afterEvents.push(event),
+      before: (_events, entity) => beforeEntities.push(entity)
+    }
     withFakeService(fakeSrv, () => installExtensionGuard())
-    expect(events).to.include('validate')
+    expect(afterEvents).to.include('validate')
+    expect(beforeEntities).to.include('Extensions')
+  })
+
+  it('installs the CSV guard once on an already-served ModelProviderService', () => {
+    const events = []
+    const fakeSrv = { name: 'cds.xt.ModelProviderService', after: event => events.push(event) }
+    withFakeService(fakeSrv, () => {
+      installExtensionGuard()
+      cds.emit('serving', fakeSrv)
+      cds.emit('served', { [fakeSrv.name]: fakeSrv })
+    })
+    expect(events).to.deep.equal(['getExtCsvs'])
   })
 })

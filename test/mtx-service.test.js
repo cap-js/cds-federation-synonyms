@@ -12,7 +12,7 @@ cds.test().in(__dirname + '/..')
 
 const MODEL = __dirname + '/../lib/mtx-service.cds'
 const IMPL  = __dirname + '/../lib/mtx-service.js'
-const REG   = 'cds.dataproducts.synonyms.Registry'
+const REG   = require('../lib/config-helper').REGISTRY
 
 let srv, ds
 const auditEvents = []   // captured audit-log emissions (reset per test)
@@ -250,7 +250,7 @@ describe('ConfigService audit logging', () => {
     expect(ev).to.have.lengthOf(1)
     expect(ev[0].data.tenant).to.equal('$PROVIDER')   // written to the provider account
     expect(ev[0].data.object).to.deep.equal({
-      type: 'cds.dataproducts.synonyms.Registry',
+      type: 'cds.xt.synonyms.Registry',
       id: { tenant: 't1', provider_service_manager: 'sm-a' }   // app tenant preserved here
     })
     expect(ev[0].data.attributes).to.deep.include({ name: 'provider_service_manager', old: null, new: 'sm-a' })
@@ -313,7 +313,7 @@ describe('ConfigService audit logging', () => {
     const sec = securityEvents()
     expect(sec).to.have.lengthOf(1)
     expect(sec[0].data.tenant).to.equal('$PROVIDER')          // written to the provider account
-    expect(sec[0].data.data.object_type).to.equal('cds.dataproducts.synonyms.Registry')
+    expect(sec[0].data.data.object_type).to.equal('cds.xt.synonyms.Registry')
     expect(sec[0].data.data.action).to.equal('connect')
     expect(sec[0].data.data.tenant).to.equal('t1')            // app tenant preserved in the event data
     expect(sec[0].data.data.service_manager).to.equal('sm-a')
