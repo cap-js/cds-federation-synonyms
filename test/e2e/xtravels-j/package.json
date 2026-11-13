@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "devDependencies": {
     "@sap/cds-dk": "^10",
-    "@sap/cds-mtxs": "^4"
+    "@sap/cds-mtxs": "^4.2.0"
   },
   "dependencies": {
     "@cap-js/cds-federation-synonyms": "file:../cap-js-cds-federation-synonyms-0.0.1.tgz",
