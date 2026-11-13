@@ -108,10 +108,36 @@ and for the queries in _syn-config.http_.
 The apps are reduced to the bare minimum needed for testing the synonyms (no UI, no actions, no custom code).
 They represent the final state of the [walkthrough](../doc/walkthrough.md), i.e. xflights exports
 a data service for synonyms, and xtravels already consumes it. The apps are ready to be deployed as
-multi-tenant apps to CF. For both apps, run
+multi-tenant apps to CF. From the repository root, build and deploy each sample with the shared script:
+
 ```sh
-bash x_build-and-deploy.sh
+bash test/e2e/x_build-and-deploy.sh xflights
+bash test/e2e/x_build-and-deploy.sh xtravels
 ```
+
+The required sample is `xflights`, `xtravels`, or `xtravels-j`. Use `--pack-only` to re-pack and
+reinstall the plugin, or `--build-only` to also build the MTA without deploying:
+
+```sh
+bash test/e2e/x_build-and-deploy.sh xtravels-j --build-only
+bash test/e2e/x_build-and-deploy.sh xtravels --pack-only
+```
+
+To remove a sample's local dependencies and generated build output:
+
+```sh
+bash test/e2e/x_clean.sh xtravels
+```
+
+Use `all` to clean all three samples and remove shared plugin tarballs
+(`cap-js-cds-federation-synonyms-*.tgz`) from `test/e2e` itself:
+
+```sh
+bash test/e2e/x_clean.sh all
+```
+
+Both scripts resolve the sample directory relative to their own location, so they also work when
+invoked from another directory. Cleanup includes the Java build output when selecting `xtravels-j`.
 
 The apps can also be adapted for single-tenant deployments.
 
