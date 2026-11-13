@@ -58,4 +58,24 @@ describe('extension-guard native-worker integration', () => {
       })
     )
   })
+
+  test('rejects a stored Registry CSV draft when a native worker activates a different tag', async () => {
+    const tenant = 'stored-draft-worker'
+    const ds = await cds.connect.to('cds.xt.DeploymentService')
+    await ds.subscribe(tenant)
+    const es = await cds.connect.to('cds.xt.ExtensibilityService')
+    const sources = await tar.cz(path.join(__dirname, 'extension-evil-csv'))
+    await cds.tx({ tenant }, tx => tx.run(cds.ql.INSERT.into('cds.xt.Extensions').entries({
+      ID: cds.utils.uuid(), tag: 'old-evil-draft', activated: 'draft',
+      csn: '{"definitions":{}}', sources, timestamp: new Date().toISOString()
+    })))
+
+    await expect(cds.tx({ tenant, user: new cds.User({ id: 'dev', roles: ['cds.ExtensionDeveloper'] }) }, () =>
+      es.send({ event: 'UPSERT', entity: 'Extensions',
+        data: { ID: 'innocent', csn: ['{"definitions":{}}'], status: 2 } })
+    )).rejects.toThrow(/connect-state table/)
+    await cds.tx({ tenant }, async tx => {
+      expect(await tx.run(cds.ql.SELECT.from('cds.xt.synonyms.Registry'))).toEqual([])
+    })
+  })
 })

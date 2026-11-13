@@ -123,16 +123,16 @@ describe('extension-guard integration', () => {
   // after('validate') CSV check never fires. An attacker can store a malicious draft with a Registry
   // CSV, then activate a separate harmless extension - MTX's getExtCsvs reads ALL rows (incl.
   // drafts) on deployment and would import the CSV. The guard must reject the upload itself.
-  test('rejects an extension UPSERT that stores a Registry CSV as a draft', async () => {
+  test.each(['UPSERT', 'UPDATE'])('rejects an extension %s that stores a Registry CSV as a draft', async event => {
     const ds = await cds.connect.to('cds.xt.DeploymentService')
     await ds.subscribe(TENANT)
 
     const es = await cds.connect.to('cds.xt.ExtensibilityService')
 
-    await cds.tx({ tenant: TENANT, user: new cds.User.Privileged() }, async () => {
+    await cds.tx({ tenant: TENANT, user: new cds.User({ id: 'dev', roles: ['cds.ExtensionDeveloper'] }) }, async () => {
       await expect(
         es.send({
-          event: 'UPSERT',
+          event,
           entity: 'Extensions',
           data: {
             ID: 'evil-draft-csv',
@@ -143,6 +143,82 @@ describe('extension-guard integration', () => {
         })
       ).rejects.toThrow(/connect-state table/)
     })
+  })
+
+  test('blocks a stored Registry CSV draft when a different tag activates or the tenant upgrades', async () => {
+    const tenant = 'stored-draft'
+    const ds = await cds.connect.to('cds.xt.DeploymentService')
+    await ds.subscribe(tenant)
+    const es = await cds.connect.to('cds.xt.ExtensibilityService')
+    const sources = await tar.cz(path.join(__dirname, 'extension-evil-csv'))
+
+    // Model a draft stored before the upload guard was installed. It must never reach deployment.
+    await cds.tx({ tenant }, async tx => {
+      await tx.run(cds.ql.INSERT.into('cds.xt.Extensions').entries({
+        ID: cds.utils.uuid(), tag: 'old-evil-draft', activated: 'draft',
+        csn: '{"definitions":{}}', sources, timestamp: new Date().toISOString()
+      }))
+      expect(await tx.run(cds.ql.SELECT.from('cds.xt.synonyms.Registry'))).toEqual([])
+    })
+
+    await expect(cds.tx({ tenant, user: new cds.User({ id: 'dev', roles: ['cds.ExtensionDeveloper'] }) }, () =>
+      es.send({ event: 'UPSERT', entity: 'Extensions',
+        data: { ID: 'innocent', csn: ['{"definitions":{}}'], status: 2 } })
+    )).rejects.toThrow(/connect-state table/)
+
+    // Upgrade does not call ExtensibilityService.validate; guard the CSVs returned to deployment too.
+    await expect(ds.upgrade(tenant)).rejects.toThrow(/connect-state table/)
+    await cds.tx({ tenant }, async tx => {
+      expect(await tx.run(cds.ql.SELECT.from('cds.xt.synonyms.Registry'))).toEqual([])
+      const rows = await tx.run(cds.ql.SELECT.from('cds.xt.Extensions').where({ activated: 'database' }))
+      expect(rows).toEqual([])
+    })
+
+    // Removing the offending draft restores normal activation and upgrades.
+    await cds.tx({ tenant, user: new cds.User({ id: 'dev', roles: ['cds.ExtensionDeveloper'] }) }, () =>
+      es.discard('old-evil-draft'))
+    await cds.tx({ tenant, user: new cds.User({ id: 'dev', roles: ['cds.ExtensionDeveloper'] }) }, () =>
+      es.send({ event: 'UPSERT', entity: 'Extensions',
+        data: { ID: 'innocent', csn: ['{"definitions":{}}'], status: 2 } }))
+    await ds.upgrade(tenant)
+  })
+
+  test('allows ordinary CSV data from a draft during activation of another tag', async () => {
+    const tenant = 'ordinary-csv'
+    const ds = await cds.connect.to('cds.xt.DeploymentService')
+    await ds.subscribe(tenant)
+    const es = await cds.connect.to('cds.xt.ExtensibilityService')
+    const id = cds.utils.uuid()
+    await cds.tx({ tenant, user: new cds.User({ id: 'dev', roles: ['cds.ExtensionDeveloper'] }) }, () =>
+      es.send({ event: 'UPSERT', entity: 'Extensions', data: {
+        ID: 'ordinary-draft', csn: ['{"definitions":{}}'], status: 1,
+        csvs: [{ name: 'ext.guard-Things.csv', content: `ID;name\n${id};ordinary` }]
+      } }))
+    await cds.tx({ tenant, user: new cds.User({ id: 'dev', roles: ['cds.ExtensionDeveloper'] }) }, () =>
+      es.send({ event: 'UPSERT', entity: 'Extensions',
+        data: { ID: 'innocent', csn: ['{"definitions":{}}'], status: 2 } }))
+    await cds.tx({ tenant }, async tx => {
+      expect(await tx.run(cds.ql.SELECT.from('ext.guard.Things'))).toEqual([{ ID: id, name: 'ordinary' }])
+      expect(await tx.run(cds.ql.SELECT.from('cds.xt.synonyms.Registry'))).toEqual([])
+    })
+  })
+
+  test('rejects a Registry scalar subquery nested in a function argument during activation', async () => {
+    const tenant = 'nested-function'
+    const ds = await cds.connect.to('cds.xt.DeploymentService')
+    await ds.subscribe(tenant)
+    const es = await cds.connect.to('cds.xt.ExtensibilityService')
+    const extension = `using { ext.guard.Things } from './things';
+    using { cds.xt.synonyms.Registry } from './registry';
+    entity x_Leak as select from Things {
+      key ID,
+      coalesce((select from Registry { provider_tenant } limit 1), '') as secret : String
+    };`
+
+    await expect(cds.tx({ tenant, user: new cds.User({ id: 'dev', roles: ['cds.ExtensionDeveloper'] }) }, () =>
+      es.send({ event: 'UPSERT', entity: 'Extensions',
+        data: { ID: 'nested-function', csn: [extension], status: 2 } })
+    )).rejects.toThrow(/read the synonym connect-state table/)
   })
 
   // Read vector - nested subqueries: cds-mtxs's walker only checks top-level FROM, so a scalar

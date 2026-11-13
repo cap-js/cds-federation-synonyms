@@ -166,6 +166,45 @@ describe('extension-guard: offendingRegistryReaders', () => {
     expect(offendingRegistryReaders(model(), model({ 'x.Leak': existsWhere(REG) }))).to.deep.equal(['x.Leak'])
   })
 
+  const nestedQueries = {
+    'function arguments': { SELECT: { from: { ref: ['ext.guard.Things'] }, columns: [
+      { func: 'coalesce', args: [sel(REG), { val: '' }], as: 'secret' }
+    ] } },
+    'list expressions': { SELECT: { from: { ref: ['ext.guard.Things'] }, where: [
+      { ref: ['name'] }, 'in', { list: [sel(REG)] }
+    ] } },
+    'ORDER BY expressions': { SELECT: { from: { ref: ['ext.guard.Things'] }, orderBy: [sel(REG)] } },
+    'HAVING expressions': { SELECT: { from: { ref: ['ext.guard.Things'] }, having: ['exists', sel(REG)] } },
+    'join predicates': { SELECT: { from: { join: 'inner',
+      args: [{ ref: ['ext.guard.Things'], as: 'a' }, { ref: ['ext.guard.Things'], as: 'b' }],
+      on: [{ func: 'coalesce', args: [sel(REG), { val: '' }] }, '=', { val: 'secret' }]
+    } } },
+    'path filters': { SELECT: { from: { ref: [
+      { id: 'ext.guard.Things', where: ['exists', sel(REG)] }
+    ] } } },
+    'column path filters': { SELECT: { from: { ref: ['ext.guard.Things'] }, columns: [
+      { ref: [{ id: 'related', where: ['exists', sel(REG)] }, 'name'] }
+    ] } },
+    'a derived table': { SELECT: { from: { ...scalar(REG).query, as: 'nested' } } },
+    'nested UNION operands': { SET: { op: 'union', args: [scalar(REG).query, sel('ext.guard.Things')] } }
+  }
+
+  for (const [position, query] of Object.entries(nestedQueries)) {
+    it(`flags Registry subqueries in ${position}`, () => {
+      expect(offendingRegistryReaders(model(), model({ 'x.Leak': { kind: 'entity', query } }))).to.deep.equal(['x.Leak'])
+    })
+
+    it(`allows unrelated subqueries in ${position}`, () => {
+      const safeQuery = JSON.parse(JSON.stringify(query).replaceAll(REG, 'ext.guard.Things'))
+      expect(offendingRegistryReaders(model(), model({ 'x.Ok': { kind: 'entity', query: safeQuery } }))).to.deep.equal([])
+    })
+  }
+
+  it('checks expressions in the projection shorthand', () => {
+    const projection = scalar(REG).query.SELECT
+    expect(offendingRegistryReaders(model(), model({ 'x.Leak': { kind: 'entity', projection } }))).to.deep.equal(['x.Leak'])
+  })
+
   it('does NOT flag a scalar subquery over an unrelated entity', () => {
     expect(offendingRegistryReaders(model(), model({ 'x.Ok': scalar('ext.guard.Things') }))).to.deep.equal([])
   })
@@ -212,7 +251,7 @@ describe('extension-guard: installExtensionGuard eager install', () => {
   const installExtensionGuard = require('../lib/extension-guard')
 
   const withFakeService = (srv, fn) => {
-    const key = 'cds.xt.ExtensibilityService'
+    const key = srv.name
     const had = Object.prototype.hasOwnProperty.call(cds.services, key)
     const saved = cds.services[key]
     cds.services[key] = srv
@@ -232,5 +271,16 @@ describe('extension-guard: installExtensionGuard eager install', () => {
     withFakeService(fakeSrv, () => installExtensionGuard())
     expect(afterEvents).to.include('validate')
     expect(beforeEntities).to.include('Extensions')
+  })
+
+  it('installs the CSV guard once on an already-served ModelProviderService', () => {
+    const events = []
+    const fakeSrv = { name: 'cds.xt.ModelProviderService', after: event => events.push(event) }
+    withFakeService(fakeSrv, () => {
+      installExtensionGuard()
+      cds.emit('serving', fakeSrv)
+      cds.emit('served', { [fakeSrv.name]: fakeSrv })
+    })
+    expect(events).to.deep.equal(['getExtCsvs'])
   })
 })
