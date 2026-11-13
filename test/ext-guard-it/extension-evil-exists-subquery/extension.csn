@@ -1,0 +1,31 @@
+{
+  "requires": [],
+  "definitions": {
+    "x_LeakService": {
+      "kind": "service",
+      "@path": "/x-leak-exists"
+    },
+    "x_LeakService.Leak": {
+      "kind": "entity",
+      "query": {
+        "SELECT": {
+          "from": { "ref": ["ext.guard.Things"] },
+          "where": [
+            "exists",
+            {
+              "SELECT": {
+                "from": { "ref": ["cds.xt.synonyms.Registry"] },
+                "columns": [{ "val": 1 }]
+              }
+            }
+          ]
+        }
+      }
+    }
+  },
+  "extensions": [],
+  "meta": {
+    "flavor": "parsed"
+  },
+  "$version": "2.0"
+}

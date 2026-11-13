@@ -22,6 +22,8 @@ describe('extension-guard integration', () => {
     await fs.promises.rm(path.join(__dirname, 'extension-evil-feature.tgz'), { force: true })
     await fs.promises.rm(path.join(__dirname, 'extension-evil-csv.tgz'), { force: true })
     await fs.promises.rm(path.join(__dirname, 'extension-evil-union.tgz'), { force: true })
+    await fs.promises.rm(path.join(__dirname, 'extension-evil-scalar-subquery.tgz'), { force: true })
+    await fs.promises.rm(path.join(__dirname, 'extension-evil-exists-subquery.tgz'), { force: true })
   })
 
   test('rejects an extension that adds @data.product:via-synonym + @cds.external to a service', async () => {
@@ -141,6 +143,51 @@ describe('extension-guard integration', () => {
         })
       ).rejects.toThrow(/connect-state table/)
     })
+  })
+
+  // Read vector - nested subqueries: cds-mtxs's walker only checks top-level FROM, so a scalar
+  // subquery in a SELECT column or an EXISTS subquery in WHERE can expose the Registry without
+  // triggering the base check. The extension-guard's walker recurses into columns/WHERE/HAVING.
+  test('rejects an extension that reads the connect-state table via a scalar subquery in columns', async () => {
+    await tar.czf(path.join(__dirname, 'extension-evil-scalar-subquery.tgz'),
+      path.join(__dirname, 'extension-evil-scalar-subquery'))
+
+    const ds = await cds.connect.to('cds.xt.DeploymentService')
+    await ds.subscribe(TENANT)
+
+    const tgz = await fs.promises.readFile(path.resolve(__dirname, 'extension-evil-scalar-subquery.tgz'))
+
+    await expect(
+      POST('/-/cds/extensibility/push',
+        { extension: tgz.toString('base64') },
+        { auth: { username: USER } })
+    ).rejects.toThrow(
+      expect.objectContaining({
+        response: expect.objectContaining({ status: 422 }),
+        message: expect.stringContaining('read the synonym connect-state table')
+      })
+    )
+  })
+
+  test('rejects an extension that reads the connect-state table via an EXISTS subquery in WHERE', async () => {
+    await tar.czf(path.join(__dirname, 'extension-evil-exists-subquery.tgz'),
+      path.join(__dirname, 'extension-evil-exists-subquery'))
+
+    const ds = await cds.connect.to('cds.xt.DeploymentService')
+    await ds.subscribe(TENANT)
+
+    const tgz = await fs.promises.readFile(path.resolve(__dirname, 'extension-evil-exists-subquery.tgz'))
+
+    await expect(
+      POST('/-/cds/extensibility/push',
+        { extension: tgz.toString('base64') },
+        { auth: { username: USER } })
+    ).rejects.toThrow(
+      expect.objectContaining({
+        response: expect.objectContaining({ status: 422 }),
+        message: expect.stringContaining('read the synonym connect-state table')
+      })
+    )
   })
 
   // Read vector: an extension exposes the connect-state table (cds.xt.synonyms.Registry) through a

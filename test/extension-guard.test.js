@@ -137,6 +137,15 @@ describe('extension-guard: offendingRegistryReaders', () => {
   const proj = (name) => ({ kind: 'entity', query: sel(name) })
   const join = (a, b) => ({ kind: 'entity', query: { SELECT: { from: { join: 'inner', args: [{ ref: [a] }, { ref: [b] }] } } } })
 
+  const scalar = (name) => ({ kind: 'entity', query: { SELECT: {
+    from: { ref: ['ext.guard.Things'] },
+    columns: [{ ref: ['ID'] }, { SELECT: { from: { ref: [name] } }, as: 'secret' }]
+  } } })
+  const existsWhere = (name) => ({ kind: 'entity', query: { SELECT: {
+    from: { ref: ['ext.guard.Things'] },
+    where: ['exists', { SELECT: { from: { ref: [name] } } }]
+  } } })
+
   it('flags a new entity reading Registry via top-level UNION (the bypass)', () => {
     expect(offendingRegistryReaders(model(), model({ 'x.Leak': union(REG) }))).to.deep.equal(['x.Leak'])
   })
@@ -147,6 +156,18 @@ describe('extension-guard: offendingRegistryReaders', () => {
 
   it('flags a read via a join', () => {
     expect(offendingRegistryReaders(model(), model({ 'x.Leak': join('ext.guard.Things', REG) }))).to.deep.equal(['x.Leak'])
+  })
+
+  it('flags a new entity reading Registry via a scalar subquery in columns', () => {
+    expect(offendingRegistryReaders(model(), model({ 'x.Leak': scalar(REG) }))).to.deep.equal(['x.Leak'])
+  })
+
+  it('flags a new entity reading Registry via an EXISTS subquery in WHERE', () => {
+    expect(offendingRegistryReaders(model(), model({ 'x.Leak': existsWhere(REG) }))).to.deep.equal(['x.Leak'])
+  })
+
+  it('does NOT flag a scalar subquery over an unrelated entity', () => {
+    expect(offendingRegistryReaders(model(), model({ 'x.Ok': scalar('ext.guard.Things') }))).to.deep.equal([])
   })
 
   it('does NOT flag a view over an unrelated entity', () => {
